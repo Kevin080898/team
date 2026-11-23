@@ -301,16 +301,29 @@ async function auswerten(text) {
 }
 function diktat(ta, btn) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (diktat.rec) { diktat.rec.stop(); return; }
-  try {
-    const rec = new SR(); diktat.rec = rec;
-    rec.lang = L === 'ro' ? 'ro-RO' : 'de-DE'; rec.continuous = true; rec.interimResults = true;
-    const basis = ta.value ? ta.value.trim() + ' ' : '';
-    rec.onresult = ev => { let s = ''; for (const r of ev.results) s += r[0].transcript; ta.value = basis + s; };
-    rec.onerror = ev => { if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') { btn.classList.add('hide'); toast(t('mikroAus')); } };
-    rec.onend = () => { diktat.rec = null; btn.classList.remove('rec'); btn.textContent = '🎤 ' + t('sprechen'); };
-    rec.start(); btn.classList.add('rec'); btn.textContent = '■ ' + t('stopp');
-  } catch (e) { btn.classList.add('hide'); toast(t('mikroAus')); }
+  const ruhe = () => { btn.classList.remove('rec'); btn.textContent = '🎤 ' + t('sprechen'); };
+  // Läuft eine Aufnahme: beenden und den Knopf sofort freigeben (manche Handys melden das Ende nicht zurück).
+  if (diktat.rec) { const alt = diktat.rec; diktat.rec = null; diktat.alt = alt; try { alt.stop(); } catch (e) { } ruhe(); return; }
+  // Eine frühere Aufnahme, die noch nicht ganz beendet ist, würde die neue blockieren.
+  if (diktat.alt) { try { diktat.alt.onresult = null; diktat.alt.abort(); } catch (e) { } diktat.alt = null; }
+  const starten = versuch => {
+    try {
+      const rec = new SR(); diktat.rec = rec;
+      rec.lang = L === 'ro' ? 'ro-RO' : 'de-DE'; rec.continuous = true; rec.interimResults = true;
+      const basis = ta.value ? ta.value.trim() + ' ' : '';
+      rec.onresult = ev => { let s = ''; for (const r of ev.results) s += r[0].transcript; ta.value = basis + s; };
+      rec.onerror = ev => {
+        if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') { btn.classList.add('hide'); toast(t('mikroAus')); }
+        if (diktat.rec === rec) { diktat.rec = null; ruhe(); }
+      };
+      rec.onend = () => { if (diktat.alt === rec) diktat.alt = null; if (diktat.rec === rec) { diktat.rec = null; ruhe(); } };
+      rec.start(); btn.classList.add('rec'); btn.textContent = '■ ' + t('stopp');
+    } catch (e) {
+      diktat.rec = null; ruhe();
+      if (versuch < 2) setTimeout(() => starten(versuch + 1), 400); else toast(t('mikroAus'));
+    }
+  };
+  starten(1);
 }
 
 /* ---------- Editor (Bestätigen / Ändern) ---------- */
