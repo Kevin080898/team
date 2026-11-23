@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Immoselect Team</title>
+<style>
+:root{--bg:#f4f4f1;--card:#fff;--ink:#1d1d1b;--muted:#6b6a66;--line:#e3e2dd;--acc:#1f5fbf;--acc-bg:#e8f0fc;--ok:#1d7a3e;--ok-bg:#e7f5ec;--warn:#8a5a00;--warn-bg:#fff4dc;--bad:#b3261e;--bad-bg:#fdecea;--r:14px}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;-webkit-text-size-adjust:100%}
+header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;align-items:center;gap:10px}
+header .t{flex:1;min-width:0}
+header .t b{display:block;font-size:18px}
+header .t span{font-size:13px;color:var(--muted)}
+.lang{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.lang button{border:0;background:none;padding:6px 12px;font-weight:600;font-size:14px;font-family:inherit;color:var(--muted);min-height:34px}
+.lang button.on{background:var(--ink);color:#fff}
+main{padding:14px 14px 96px;max-width:640px;margin:0 auto}
+nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:flex;padding:4px 4px calc(4px + env(safe-area-inset-bottom));z-index:5}
+nav button{flex:1;border:0;background:none;padding:6px 2px;font-weight:600;font-size:12px;font-family:inherit;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;min-height:56px;position:relative}
+nav button svg{width:24px;height:24px}
+nav button.on{color:var(--acc)}
+nav .dot{position:absolute;top:4px;right:calc(50% - 20px);background:var(--bad);color:#fff;border-radius:999px;font-size:11px;padding:0 6px;line-height:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin:0 0 12px}
+.card h2{margin:0 0 10px;font-size:17px}
+.muted{color:var(--muted)}.small{font-size:14px}.xs{font-size:12.5px}
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:15px 16px;font-weight:600;font-size:17px;font-family:inherit;min-height:54px;cursor:pointer}
+.btn.pri{background:var(--acc);color:#fff}
+.btn.ok{background:var(--ok);color:#fff}
+.btn.sec{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.btn.link{background:none;color:var(--acc);padding:10px;min-height:0;font-weight:600}
+.btn:disabled{opacity:.55}
+.btn .sub{display:block;font-weight:400;font-size:14px;opacity:.9;margin-top:2px}
+.row{display:flex;gap:10px}.row>*{flex:1;min-width:0}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px;font-weight:600}
+input,select,textarea{width:100%;font:inherit;padding:12px;border:1px solid #cfcdc6;border-radius:10px;background:#fff;color:var(--ink);min-height:48px}
+textarea{min-height:110px;resize:vertical}
+input[type=date],input[type=time]{-webkit-appearance:none;appearance:none}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:9px 14px;font-weight:600;font-size:15px;font-family:inherit;min-height:42px;color:var(--ink)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.ok-box{background:var(--ok-bg);border-color:#bfe3cb}
+.warn{background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:10px 12px;font-size:14.5px;margin:10px 0}
+.bad{background:var(--bad-bg);color:var(--bad);border-radius:10px;padding:10px 12px;font-size:14.5px;margin:10px 0}
+.info{background:var(--acc-bg);color:#123f80;border-radius:10px;padding:10px 12px;font-size:14.5px;margin:10px 0}
+.or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:14px;margin:14px 0}
+.or:before,.or:after{content:"";flex:1;border-top:1px solid var(--line)}
+.task{display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.task:first-of-type{border-top:0;padding-top:0}
+.bar{width:6px;border-radius:6px;flex:none}
+.p1{background:var(--bad)}.p2{background:#e0a100}.p3{background:#b9b7b0}
+.badge{display:inline-block;font-weight:700;font-size:11.5px;font-family:inherit;border-radius:6px;padding:2px 7px;vertical-align:middle;margin-right:6px}
+.b-neu{background:var(--acc);color:#fff}.b-p1{background:var(--bad-bg);color:var(--bad)}.b-ok{background:var(--ok-bg);color:var(--ok)}.b-warn{background:var(--warn-bg);color:var(--warn)}
+.einsatz{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:10px 0;background:#fbfbfa}
+.sum{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;margin-top:10px}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;margin-top:10px}
+.thumbs div{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:#ddd;display:flex;align-items:center;justify-content:center;font-size:12px}
+.thumbs img{width:100%;height:100%;object-fit:cover}
+.thumbs button{position:absolute;top:4px;right:4px;border:0;border-radius:999px;width:26px;height:26px;background:rgba(0,0,0,.6);color:#fff;font-size:15px}
+.day{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.day:first-of-type{border-top:0}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted);text-transform:none}
+td.n,th.n{text-align:right;white-space:nowrap}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-size:15px;max-width:90%;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
+#toast.on{opacity:1}
+#load{position:fixed;inset:0;background:rgba(244,244,241,.85);display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:30;font-weight:600}
+#load.on{display:flex}
+.spin{width:36px;height:36px;border:4px solid #cfcdc6;border-top-color:var(--acc);border-radius:50%;animation:s 1s linear infinite}
+@keyframes s{to{transform:rotate(360deg)}}
+.mic{display:flex;align-items:center;justify-content:center;gap:8px}
+.mic.rec{background:var(--bad)!important;color:#fff!important}
+a{color:var(--acc)}
+details summary{cursor:pointer;color:var(--acc);font-weight:600;font-size:14px;margin-top:6px}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <div class="t"><b id="hTitle">Immoselect Team</b><span id="hSub"></span></div>
+  <div class="lang" id="lang"><button data-l="de">DE</button><button data-l="ro">RO</button></div>
+</header>
+<main id="view"><div class="card muted">…</div></main>
+<nav id="nav"></nav>
+<div id="toast"></div>
+<div id="load"><div class="spin"></div><div id="loadText"></div></div>
+
+<script>
+// API_URL leer: Seite läuft in Google Apps Script. Gesetzt (eigenständige Seite): Daten kommen per Abruf ohne Google-Anmeldung.
+const API_URL = 'https://script.google.com/macros/s/AKfycbyOBX__V2LjKdsZZgcVruvLIYN99vcRoz73NmNGQerPRrl8eo_yktc8TFR7ApWZvWPtYA/exec';
+const TOKEN = API_URL ? linkSchluessel() : '';
+function linkSchluessel() {
+  let k = new URLSearchParams(location.hash.replace(/^#/, '')).get('k') || new URLSearchParams(location.search).get('k') || '';
+  try { if (k) localStorage.setItem('teamapp_k', k); else k = localStorage.getItem('teamapp_k') || ''; } catch (e) { }
+  return k;
+}
+function senden(aktion, daten) {
+  if (API_URL) return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, credentials: 'omit', redirect: 'follow',
+    body: JSON.stringify({ token: TOKEN, aktion: aktion, daten: daten || {} }) }).then(r => r.json());
+  return new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(rej).api(TOKEN, aktion, daten || {}));
+}
+const KUNDE = 'Kundenauftrag', SONST = 'Sonstiges';
+let S = null, A = null, L = 'de', TAB = 'heute', EDIT = null, UPL = { art: 'Foto', objekt: '', adresse: '', notiz: '', files: [] };
+
+const I = {
+  de: {
+    hallo: 'Hallo', heute: 'Heute', aufgaben: 'Aufgaben', fotos: 'Fotos', woche: 'Woche',
+    standard: 'Standardtag bestätigen', pause: 'Pause', min: 'Min.', std: 'Std.', oder: 'oder',
+    erzaehl: 'Erzähl kurz deinen Tag', erzaehlHint: 'Tippe auf das Mikrofon deiner Tastatur und sprich – Deutsch oder Rumänisch. Zum Beispiel: „6 Stunden Rüppurrer, danach 2 Stunden beim Kunden in der Hauptstraße 12 in Ettlingen, Türen eingestellt.“',
+    sprechen: 'Sprechen', stopp: 'Stopp', auswerten: 'Auswerten', wirdAusgewertet: 'Wird ausgewertet …', manuell: 'Ohne Sprache eintragen',
+    erfasst: 'Heute erfasst', nichtErfasst: 'Heute noch nicht erfasst', aendern: 'Ändern',
+    pruefen: 'Bitte prüfen und speichern', datum: 'Datum', art: 'Art', beginn: 'Beginn', ende: 'Ende', pauseMin: 'Pause (Min.)',
+    arbeitszeit: 'Arbeitszeit', objekt: 'Objekt', stunden: 'Stunden', taetigkeit: 'Tätigkeit', adresse: 'Adresse des Kunden',
+    weiteres: '+ Weiteres Objekt', entfernen: 'Entfernen', speichern: 'Speichern', abbrechen: 'Abbrechen', gespeichert: 'Gespeichert',
+    Arbeit: 'Arbeit', Urlaub: 'Urlaub', Krank: 'Krank', Feiertag: 'Feiertag',
+    Kundenauftrag: 'Kundenauftrag (andere Adresse)', kundeKurz: 'Kunde', Sonstiges: 'Sonstiges (Einkauf, Werkstatt)',
+    wichtig: 'Wichtig für dich', alleAufgaben: 'Alle Aufgaben ansehen', keineAufgaben: 'Keine offenen Aufgaben. 👍',
+    neu: 'NEU', bis: 'bis', p1: 'Wichtig', p2: 'Normal', p3: 'Wenn Zeit ist', erledigt: 'Erledigt', rueckmeldung: 'Rückmeldung an Kevin (optional)',
+    fotoDazu: 'Foto dazu (optional)', senden: 'Senden', danke: 'Danke! Kevin sieht es sofort.',
+    Foto: 'Foto', Schaden: 'Schaden', Beleg: 'Beleg / Rechnung', fotoArt: 'Was ist es?', notiz: 'Notiz (optional)',
+    fotoWaehlen: 'Foto aufnehmen oder auswählen', hochladen: 'Hochladen', laedt: 'Wird hochgeladen', hochgeladen: 'Hochgeladen',
+    meineTage: 'Meine letzten 14 Tage', monat: 'Dieser Monat', keineTage: 'Noch keine Einträge.',
+    datenschutz: 'Datenschutz', rueckfrage: 'Rückfrage', zusammenfassung: 'So habe ich es verstanden',
+    fehler: 'Das hat nicht geklappt', nochmal: 'Bitte nochmal versuchen.', summeWarn: 'Die Stunden je Objekt ergeben zusammen',
+    mikroAus: 'Das Mikrofon geht hier nicht – nutze das Mikrofon deiner Tastatur.',
+    H_MAX10: 'Mehr als 10 Stunden am Tag sind nicht erlaubt.', H_PAUSE30: 'Bei mehr als 6 Stunden sind mindestens 30 Minuten Pause Pflicht.',
+    H_PAUSE45: 'Bei mehr als 9 Stunden sind mindestens 45 Minuten Pause Pflicht.', H_SONNTAG: 'Sonntags wird nicht gearbeitet.',
+    H_RUHEZEIT: 'Zwischen zwei Arbeitstagen müssen mindestens 11 Stunden Ruhe liegen.', H_SUMME: 'Die Stunden je Objekt passen nicht zur Arbeitszeit.',
+    H_ZUKUNFT: 'Das Datum liegt in der Zukunft.', H_NACHTRAG: 'Nachtrag älter als 7 Tage.', H_MINIJOB: 'Achtung: Minijob-Grenze in diesem Monat erreicht. Bitte mit Kevin sprechen.',
+    H_KUNDE_OHNE_ADRESSE: 'Bitte die Adresse des Kunden angeben.',
+    ds: 'Was wird gespeichert? Deine Arbeitszeiten (Datum, Beginn, Ende, Pause), an welchem Objekt du warst, deine Tätigkeit, Fotos/Belege und Rückmeldungen. Wofür? Für die gesetzliche Arbeitszeiterfassung, deine Lohnabrechnung und die Abrechnung der Arbeiten an die Eigentümer. Wer sieht es? Kevin Schreiber als Geschäftsführer der Immoselect GmbH und die Lohnbuchhaltung. Gespeichert wird im Google-Konto der Firma; gesprochene oder getippte Texte werden zur Auswertung an Claude (Anthropic) übermittelt. Es gibt keine Ortung (GPS). Die Aufzeichnungen werden mindestens 2 Jahre aufbewahrt. Fragen, Auskunft oder Korrekturen: direkt an Kevin.'
+  },
+  ro: {
+    hallo: 'Salut', heute: 'Azi', aufgaben: 'Sarcini', fotos: 'Poze', woche: 'Săptămâna',
+    standard: 'Confirmă ziua standard', pause: 'Pauză', min: 'min.', std: 'ore', oder: 'sau',
+    erzaehl: 'Povestește pe scurt ziua ta', erzaehlHint: 'Apasă pe microfonul de la tastatură și vorbește – în română sau germană. De exemplu: „6 ore la Rüppurrer, apoi 2 ore la un client pe Hauptstraße 12 în Ettlingen, am reglat ușile.“',
+    sprechen: 'Vorbește', stopp: 'Stop', auswerten: 'Analizează', wirdAusgewertet: 'Se analizează …', manuell: 'Introdu fără voce',
+    erfasst: 'Ziua de azi este înregistrată', nichtErfasst: 'Azi încă nu ai înregistrat', aendern: 'Modifică',
+    pruefen: 'Te rog verifică și salvează', datum: 'Data', art: 'Tip', beginn: 'Început', ende: 'Sfârșit', pauseMin: 'Pauză (min.)',
+    arbeitszeit: 'Timp de lucru', objekt: 'Imobil', stunden: 'Ore', taetigkeit: 'Ce ai lucrat', adresse: 'Adresa clientului',
+    weiteres: '+ Încă un imobil', entfernen: 'Șterge', speichern: 'Salvează', abbrechen: 'Anulează', gespeichert: 'Salvat',
+    Arbeit: 'Muncă', Urlaub: 'Concediu', Krank: 'Bolnav', Feiertag: 'Sărbătoare',
+    Kundenauftrag: 'Lucrare la client (altă adresă)', kundeKurz: 'Client', Sonstiges: 'Altele (cumpărături, atelier)',
+    wichtig: 'Important pentru tine', alleAufgaben: 'Vezi toate sarcinile', keineAufgaben: 'Nicio sarcină deschisă. 👍',
+    neu: 'NOU', bis: 'până la', p1: 'Important', p2: 'Normal', p3: 'Când ai timp', erledigt: 'Am terminat', rueckmeldung: 'Mesaj pentru Kevin (opțional)',
+    fotoDazu: 'Poză (opțional)', senden: 'Trimite', danke: 'Mulțumesc! Kevin vede imediat.',
+    Foto: 'Poză', Schaden: 'Defect', Beleg: 'Bon / factură', fotoArt: 'Ce este?', notiz: 'Notă (opțional)',
+    fotoWaehlen: 'Fă o poză sau alege din galerie', hochladen: 'Încarcă', laedt: 'Se încarcă', hochgeladen: 'Încărcat',
+    meineTage: 'Ultimele mele 14 zile', monat: 'Luna aceasta', keineTage: 'Încă nu există înregistrări.',
+    datenschutz: 'Protecția datelor', rueckfrage: 'Întrebare', zusammenfassung: 'Așa am înțeles',
+    fehler: 'Nu a mers', nochmal: 'Te rog încearcă din nou.', summeWarn: 'Orele pe imobile fac împreună',
+    mikroAus: 'Microfonul nu merge aici – folosește microfonul de la tastatură.',
+    H_MAX10: 'Mai mult de 10 ore pe zi nu sunt permise.', H_PAUSE30: 'Peste 6 ore de lucru, pauza minimă este de 30 de minute.',
+    H_PAUSE45: 'Peste 9 ore de lucru, pauza minimă este de 45 de minute.', H_SONNTAG: 'Duminica nu se lucrează.',
+    H_RUHEZEIT: 'Între două zile de lucru trebuie să fie cel puțin 11 ore de odihnă.', H_SUMME: 'Orele pe imobile nu se potrivesc cu timpul de lucru.',
+    H_ZUKUNFT: 'Data este în viitor.', H_NACHTRAG: 'Înregistrare cu întârziere (peste 7 zile).', H_MINIJOB: 'Atenție: limita de minijob pe luna aceasta este atinsă. Te rog vorbește cu Kevin.',
+    H_KUNDE_OHNE_ADRESSE: 'Te rog spune adresa clientului.',
+    ds: 'Ce se salvează? Orele tale de lucru (data, început, sfârșit, pauză), la ce imobil ai fost, ce ai lucrat, poze/bonuri și mesajele tale. Pentru ce? Pentru evidența legală a timpului de lucru, salariul tău și facturarea lucrărilor către proprietari. Cine vede? Kevin Schreiber, director al Immoselect GmbH, și contabilitatea de salarii. Datele sunt salvate în contul Google al firmei; textele vorbite sau scrise sunt trimise la Claude (Anthropic) pentru analiză. Nu există localizare (GPS). Înregistrările se păstrează cel puțin 2 ani. Întrebări, informații sau corecturi: direct la Kevin.'
+  }
+};
+const t = k => (I[L] && I[L][k]) || I.de[k] || k;
+const TAGE = { de: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'], ro: ['Du', 'Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ'] };
+const TAGE_LANG = { de: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'], ro: ['duminică', 'luni', 'marți', 'miercuri', 'joi', 'vineri', 'sâmbătă'] };
+
+/* ---------- Helfer ---------- */
+function h(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v === null || v === undefined || v === false) continue;
+    if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (k === 'class') e.className = v;
+    else if (k === 'value') e.value = v;
+    else e.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of kids.flat()) if (c !== null && c !== undefined && c !== false) e.append(c instanceof Node ? c : String(c));
+  return e;
+}
+// Der Server liefert nach Änderungen den neuen Stand gleich mit; die folgende Abfrage von 'init'/'admin' nimmt ihn aus dem Vorrat.
+const VORRAT = {};
+function call(aktion, daten) {
+  const v = VORRAT[aktion];
+  if (v && Date.now() - v.zeit < 8000) { VORRAT[aktion] = null; return Promise.resolve(v.wert); }
+  return senden(aktion, daten).then(r => {
+    if (!r || !r.ok) throw new Error(r ? r.error : 'Fehler');
+    if (r.init) VORRAT.init = { wert: r.init, zeit: Date.now() };
+    if (r.admin) VORRAT.admin = { wert: r.admin, zeit: Date.now() };
+    return r.data;
+  });
+}
+function toast(m) { const x = document.getElementById('toast'); x.textContent = m; x.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => x.classList.remove('on'), 2600); }
+function laden(an, text) { document.getElementById('load').classList.toggle('on', !!an); document.getElementById('loadText').textContent = text || ''; }
+function fehler(e) { laden(false); toast(t('fehler') + ': ' + (e && e.message || e)); console.error(e); }
+const zahl = x => (Math.round((Number(x) || 0) * 100) / 100).toLocaleString(L === 'ro' ? 'ro-RO' : 'de-DE', { maximumFractionDigits: 2 });
+const dKurz = d => { const p = d.split('-'); const w = new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay(); return TAGE[L][w] + ' ' + p[2] + '.' + p[1] + '.'; };
+const dLang = d => { const p = d.split('-'); const w = new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay(); return TAGE_LANG[L][w] + ', ' + p[2] + '.' + p[1] + '.' + p[0]; };
+const dDe = d => { if (!d) return ''; const p = String(d).slice(0, 10).split('-'); return p[2] + '.' + p[1] + '.' + p[0] + String(d).slice(10); };
+const minuten = hm => { const p = String(hm || '0:0').split(':'); return (+p[0]) * 60 + (+p[1] || 0); };
+const objLabel = (o, kurz) => o === KUNDE ? (kurz ? t('kundeKurz') : t('Kundenauftrag')) : o === SONST ? (kurz ? t('Sonstiges').split(' (')[0] : t('Sonstiges')) : String(o || '').replace(/, (Karlsruhe)$/, '');
+const icon = p => { const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('fill', 'none'); s.setAttribute('stroke', 'currentColor'); s.setAttribute('stroke-width', '2'); s.setAttribute('stroke-linecap', 'round'); s.setAttribute('stroke-linejoin', 'round'); s.innerHTML = p; return s; };
+const ICONS = {
+  heute: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', aufgaben: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>',
+  fotos: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>', woche: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
+  team: '<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14c3 0 5 2 5 5"/>',
+  kunden: '<path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6h6v6"/>', dateien: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/>', stunden: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'
+};
+
+/* ---------- Start ---------- */
+async function start() {
+  try {
+    S = await call('init');
+    L = S.me.sprache || 'de';
+    document.documentElement.lang = L;
+    if (!UPL.objekt) UPL.objekt = S.me.std.objekt;
+    if (S.me.rolle === 'Admin') { TAB = TAB === 'heute' ? 'team' : TAB; A = await call('admin'); }
+    zeichne();
+  } catch (e) {
+    const m = String(e.message || e);
+    document.getElementById('view').replaceChildren(h('div', { class: 'bad' }, m === 'Link ungültig'
+      ? 'Dieser Link ist ungültig oder nicht mehr aktiv. / Linkul nu este valid. Te rog cere un link nou de la Kevin Schreiber.'
+      : m + ' – Bitte Seite neu laden. / Te rog reîncarcă pagina.'));
+  }
+}
+function zeichne() {
+  document.querySelectorAll('#lang button').forEach(b => b.classList.toggle('on', b.dataset.l === L));
+  document.getElementById('lang').classList.toggle('hide', S.me.rolle === 'Admin');
+  document.getElementById('hTitle').textContent = S.me.rolle === 'Admin' ? 'Immoselect Team · Verwaltung' : t('hallo') + ', ' + S.me.name.split(' ')[0];
+  document.getElementById('hSub').textContent = dLang(S.datum);
+  const tabs = S.me.rolle === 'Admin' ? ['team', 'aufgaben', 'kunden', 'dateien', 'stunden'] : ['heute', 'aufgaben', 'fotos', 'woche'];
+  const nav = document.getElementById('nav'); nav.replaceChildren();
+  const neu = S.aufgaben.filter(a => a.neu).length;
+  const namen = { team: 'Team', kunden: 'Kunden', dateien: 'Dateien', stunden: 'Stunden' };
+  tabs.forEach(k => nav.append(h('button', { class: TAB === k ? 'on' : '', onclick: () => { TAB = k; EDIT = null; zeichne(); window.scrollTo(0, 0); } },
+    icon(ICONS[k]), namen[k] && S.me.rolle === 'Admin' ? namen[k] : (S.me.rolle === 'Admin' && k === 'aufgaben' ? 'Aufgaben' : t(k)),
+    k === 'aufgaben' && neu && S.me.rolle !== 'Admin' ? h('span', { class: 'dot' }, neu) : null)));
+  const v = document.getElementById('view'); v.replaceChildren();
+  const views = { heute: vHeute, aufgaben: S.me.rolle === 'Admin' ? aAufgaben : vAufgaben, fotos: vFotos, woche: vWoche, team: aTeam, kunden: aKunden, dateien: aDateien, stunden: aStunden };
+  (views[TAB] || vHeute)(v);
+}
+document.querySelectorAll('#lang button').forEach(b => b.addEventListener('click', async () => {
+  if (b.dataset.l === L) return;
+  L = b.dataset.l; zeichne();
+  try { await call('sprache', { sprache: L }); S = await call('init'); zeichne(); } catch (e) { fehler(e); }
+}));
+
+/* ---------- Heute ---------- */
+function hinweisBox(codes) {
+  codes = (codes || []).filter(c => c && c !== 'ZUKUNFT');
+  return codes.length ? h('div', { class: 'warn' }, codes.map(c => h('div', {}, '⚠ ' + t('H_' + c)))) : null;
+}
+function tagKurz(tag) {
+  if (tag.art !== 'Arbeit') return t(tag.art);
+  return tag.beginn + '–' + tag.ende + ' · ' + t('pause') + ' ' + tag.pause + ' ' + t('min') + ' · ' + zahl(tag.arbeitszeit) + ' ' + t('std');
+}
+function vHeute(v) {
+  if (EDIT) return editor(v);
+  if (S.heute) {
+    v.append(h('div', { class: 'card ok-box' },
+      h('h2', {}, '✓ ' + t('erfasst')),
+      h('div', {}, tagKurz(S.heute)),
+      S.heute.einsaetze.map(e => h('div', { class: 'small muted' }, '• ' + objLabel(e.objekt) + (e.kundenadresse ? ' (' + e.kundenadresse + ')' : '') + ': ' + zahl(e.stunden) + ' ' + t('std') + (e.taetigkeit ? ' – ' + e.taetigkeit : ''))),
+      hinweisBox(S.heute.hinweise),
+      h('button', { class: 'btn sec', style: 'margin-top:12px', onclick: () => { EDIT = Object.assign({}, S.heute, { quelle: 'Manuell' }); zeichne(); } }, t('aendern'))));
+  } else {
+    const std = S.me.std;
+    const card = h('div', { class: 'card' },
+      h('h2', {}, t('nichtErfasst')),
+      h('button', { class: 'btn ok', id: 'btnStandard', onclick: standardtag }, t('standard'),
+        h('span', { class: 'sub' }, std.beginn + '–' + std.ende + ' · ' + t('pause') + ' ' + std.pause + ' ' + t('min') + ' · ' + objLabel(std.objekt))));
+    if (S.hatClaude) {
+      const ta = h('textarea', { id: 'freitext', placeholder: t('erzaehl') + ' …' });
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      let mic = null;
+      if (SR) {
+        mic = h('button', { class: 'btn sec mic', style: 'margin-top:8px', onclick: () => diktat(ta, mic) }, '🎤 ' + t('sprechen'));
+      }
+      card.append(h('div', { class: 'or' }, t('oder')), h('label', { for: 'freitext' }, t('erzaehl')), ta,
+        h('div', { class: 'xs muted', style: 'margin-top:6px' }, t('erzaehlHint')), mic,
+        h('button', { class: 'btn pri', style: 'margin-top:10px', onclick: () => auswerten(ta.value) }, t('auswerten')));
+    }
+    card.append(h('button', { class: 'btn link', onclick: () => { EDIT = { datum: S.datum, art: 'Arbeit', beginn: std.beginn, ende: std.ende, pause: std.pause, einsaetze: [{ objekt: std.objekt, stunden: null, taetigkeit: '', kundenadresse: '' }], quelle: 'Manuell' }; zeichne(); } }, t('manuell')));
+    v.append(card);
+  }
+  const top = S.aufgaben.slice(0, 3);
+  v.append(h('div', { class: 'card' }, h('h2', {}, t('wichtig')),
+    top.length ? top.map(a => aufgabeZeile(a, false)) : h('div', { class: 'muted' }, t('keineAufgaben')),
+    S.aufgaben.length > 3 ? h('button', { class: 'btn link', onclick: () => { TAB = 'aufgaben'; zeichne(); } }, t('alleAufgaben') + ' (' + S.aufgaben.length + ')') : null));
+}
+async function standardtag() {
+  laden(true, t('speichern') + ' …');
+  try { const r = await call('standardtag', { datum: S.datum }); S = await call('init'); laden(false); toast('✓ ' + t('gespeichert')); zeichne(); if (r.hinweise && r.hinweise.length) toast('⚠ ' + t('H_' + r.hinweise[0])); }
+  catch (e) { fehler(e); }
+}
+async function auswerten(text) {
+  if (!String(text || '').trim()) { toast(t('erzaehl')); return; }
+  laden(true, t('wirdAusgewertet'));
+  try { const p = await call('auswerten', { text, datum: S.datum }); p.quelle = 'Sprache'; p.originaltext = text; EDIT = p; laden(false); zeichne(); window.scrollTo(0, 0); }
+  catch (e) { fehler(e); }
+}
+function diktat(ta, btn) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (diktat.rec) { diktat.rec.stop(); return; }
+  try {
+    const rec = new SR(); diktat.rec = rec;
+    rec.lang = L === 'ro' ? 'ro-RO' : 'de-DE'; rec.continuous = true; rec.interimResults = true;
+    const basis = ta.value ? ta.value.trim() + ' ' : '';
+    rec.onresult = ev => { let s = ''; for (const r of ev.results) s += r[0].transcript; ta.value = basis + s; };
+    rec.onerror = ev => { if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') { btn.classList.add('hide'); toast(t('mikroAus')); } };
+    rec.onend = () => { diktat.rec = null; btn.classList.remove('rec'); btn.textContent = '🎤 ' + t('sprechen'); };
+    rec.start(); btn.classList.add('rec'); btn.textContent = '■ ' + t('stopp');
+  } catch (e) { btn.classList.add('hide'); toast(t('mikroAus')); }
+}
+
+/* ---------- Editor (Bestätigen / Ändern) ---------- */
+function editor(v) {
+  const E = EDIT;
+  E.einsaetze = (E.einsaetze || []).map(e => Object.assign({ objekt: S.me.std.objekt, stunden: null, taetigkeit: '', kundenadresse: '' }, e));
+  const optionen = S.objekte.map(o => o.name).concat([KUNDE, SONST]);
+  const card = h('div', { class: 'card' }, h('h2', {}, t('pruefen')));
+  if (E.zusammenfassung) card.append(h('div', { class: 'info' }, h('b', {}, t('zusammenfassung') + ': '), E.zusammenfassung));
+  if (E.rueckfrage) card.append(h('div', { class: 'warn' }, h('b', {}, t('rueckfrage') + ': '), E.rueckfrage));
+  card.append(h('label', {}, t('datum')), h('input', { type: 'date', value: E.datum, max: S.datum, onchange: ev => { E.datum = ev.target.value; } }));
+  card.append(h('label', {}, t('art')), h('div', { class: 'chips' }, ['Arbeit', 'Urlaub', 'Krank', 'Feiertag'].map(a =>
+    h('button', { class: 'chip' + (E.art === a ? ' on' : ''), onclick: () => { E.art = a; zeichne(); } }, t(a)))));
+  const live = h('div', {});
+  const rechne = () => {
+    const az = Math.max(0, (minuten(E.ende) - minuten(E.beginn) - (Number(E.pause) || 0)) / 60);
+    const summe = E.einsaetze.reduce((s, e) => s + (Number(e.stunden) || 0), 0);
+    const codes = [];
+    if (az > 10) codes.push('MAX10');
+    if (az > 9 && E.pause < 45) codes.push('PAUSE45'); else if (az > 6 && E.pause < 30) codes.push('PAUSE30');
+    if (E.einsaetze.some(e => e.objekt === KUNDE && !String(e.kundenadresse || '').trim())) codes.push('KUNDE_OHNE_ADRESSE');
+    live.replaceChildren(...[h('div', { class: 'sum' }, h('span', {}, t('arbeitszeit')), h('span', {}, zahl(az) + ' ' + t('std'))),
+      E.einsaetze.every(e => e.stunden !== null && e.stunden !== '') && Math.abs(summe - az) > 0.1 ? h('div', { class: 'warn' }, '⚠ ' + t('summeWarn') + ' ' + zahl(summe) + ' ' + t('std') + '.') : null,
+      hinweisBox(codes)].filter(Boolean));
+  };
+  if (E.art === 'Arbeit') {
+    card.append(h('div', { class: 'row' },
+      h('div', {}, h('label', {}, t('beginn')), h('input', { type: 'time', value: E.beginn, oninput: ev => { E.beginn = ev.target.value; rechne(); } })),
+      h('div', {}, h('label', {}, t('ende')), h('input', { type: 'time', value: E.ende, oninput: ev => { E.ende = ev.target.value; rechne(); } }))));
+    card.append(h('label', {}, t('pauseMin')), h('select', { onchange: ev => { E.pause = Number(ev.target.value); rechne(); } },
+      [0, 15, 30, 45, 60, 75, 90].map(p => h('option', { value: p, selected: Number(E.pause) === p }, p + ' ' + t('min')))));
+    E.einsaetze.forEach((e, i) => {
+      const box = h('div', { class: 'einsatz' },
+        h('label', {}, t('objekt')),
+        h('select', { onchange: ev => { e.objekt = ev.target.value; zeichne(); } }, optionen.map(o => h('option', { value: o, selected: e.objekt === o }, objLabel(o)))),
+        e.objekt === KUNDE ? [h('label', {}, t('adresse')), h('input', { value: e.kundenadresse || '', placeholder: 'Hauptstraße 12, Ettlingen', oninput: ev => { e.kundenadresse = ev.target.value; rechne(); } })] : null,
+        h('div', { class: 'row' },
+          h('div', { style: 'flex:0 0 110px' }, h('label', {}, t('stunden')), h('input', { type: 'number', inputmode: 'decimal', step: '0.25', min: '0', max: '12', value: e.stunden === null ? '' : e.stunden, oninput: ev => { e.stunden = ev.target.value === '' ? null : Number(ev.target.value.replace(',', '.')); rechne(); } })),
+          h('div', {}, h('label', {}, t('taetigkeit')), h('input', { value: e.taetigkeit || '', oninput: ev => { e.taetigkeit = ev.target.value; } }))),
+        E.einsaetze.length > 1 ? h('button', { class: 'btn link', style: 'text-align:left;padding-left:0;color:var(--bad)', onclick: () => { E.einsaetze.splice(i, 1); zeichne(); } }, t('entfernen')) : null);
+      card.append(box);
+    });
+    card.append(h('button', { class: 'btn link', style: 'text-align:left;padding-left:0', onclick: () => { E.einsaetze.push({ objekt: S.me.std.objekt, stunden: null, taetigkeit: '', kundenadresse: '' }); zeichne(); } }, t('weiteres')));
+    card.append(live); rechne();
+  }
+  card.append(h('button', { class: 'btn ok', style: 'margin-top:14px', onclick: speichern }, t('speichern')),
+    h('button', { class: 'btn link', onclick: () => { EDIT = null; zeichne(); } }, t('abbrechen')));
+  v.append(card);
+}
+async function speichern() {
+  const E = EDIT;
+  laden(true, t('speichern') + ' …');
+  try {
+    const r = await call('speichern', { tag: { datum: E.datum, art: E.art, beginn: E.beginn, ende: E.ende, pause: E.pause, einsaetze: E.einsaetze }, quelle: E.quelle || 'Manuell', originaltext: E.originaltext || '' });
+    EDIT = null; S = await call('init'); laden(false); zeichne(); window.scrollTo(0, 0);
+    toast('✓ ' + t('gespeichert') + (r.datum !== S.datum ? ' (' + dKurz(r.datum) + ')' : ''));
+  } catch (e) { fehler(e); }
+}
+
+/* ---------- Aufgaben (Mitarbeiter) ---------- */
+function aufgabeZeile(a, mitAktion) {
+  const box = h('div', { class: 'task' }, h('div', { class: 'bar p' + a.prio }),
+    h('div', { style: 'flex:1;min-width:0' },
+      h('div', {}, a.neu ? h('span', { class: 'badge b-neu' }, t('neu')) : null, a.prio === 1 ? h('span', { class: 'badge b-p1' }, t('p1')) : null, h('b', {}, a.titel)),
+      h('div', { class: 'small muted' }, [a.objekt ? objLabel(a.objekt) : '', a.faellig ? t('bis') + ' ' + dKurz(a.faellig) : ''].filter(Boolean).join(' · ')),
+      a.beschreibung ? h('div', { class: 'small', style: 'margin-top:4px;white-space:pre-wrap' }, a.beschreibung) : null,
+      mitAktion ? erledigtForm(a) : null));
+  return box;
+}
+function erledigtForm(a) {
+  const wrap = h('div', { style: 'margin-top:10px' });
+  const zu = h('button', { class: 'btn sec', style: 'min-height:46px;padding:10px', onclick: () => { zu.classList.add('hide'); form.classList.remove('hide'); } }, '✓ ' + t('erledigt'));
+  const ta = h('textarea', { placeholder: t('rueckmeldung'), style: 'min-height:80px' });
+  const anzahl = h('span', { class: 'small muted' });
+  const inp = h('input', { type: 'file', accept: 'image/*', multiple: true, class: 'hide', onchange: () => { anzahl.textContent = inp.files.length ? ' ✓ ' + inp.files.length : ''; } });
+  const form = h('div', { class: 'hide' }, h('label', {}, t('rueckmeldung')), ta,
+    h('button', { class: 'btn sec', style: 'margin-top:10px;min-height:46px;padding:10px', onclick: () => inp.click() }, '📷 ' + t('fotoDazu'), anzahl), inp,
+    h('button', { class: 'btn ok', style: 'margin-top:10px', onclick: async () => {
+      laden(true, t('senden') + ' …');
+      try {
+        const files = Array.from(inp.files || []);
+        for (let i = 0; i < files.length; i++) { laden(true, t('laedt') + ' ' + (i + 1) + ' / ' + files.length); await ladeHoch(files[i], { art: 'Foto', objekt: a.objekt || S.me.std.objekt, notiz: a.titel, aufgabeId: a.id, nr: i + 1 }); }
+        await call('erledigt', { id: a.id, rueckmeldung: ta.value });
+        S = await call('init'); laden(false); toast('✓ ' + t('danke')); zeichne();
+      } catch (e) { fehler(e); }
+    } }, t('senden')));
+  wrap.append(zu, form);
+  return wrap;
+}
+function vAufgaben(v) {
+  v.append(h('div', { class: 'card' }, h('h2', {}, t('aufgaben')),
+    S.aufgaben.length ? S.aufgaben.map(a => aufgabeZeile(a, true)) : h('div', { class: 'muted' }, t('keineAufgaben'))));
+}
+
+/* ---------- Fotos / Belege ---------- */
+function vFotos(v) {
+  const optionen = S.objekte.map(o => o.name).concat([KUNDE, SONST]);
+  const thumbs = h('div', { class: 'thumbs' });
+  const zeigeThumbs = () => {
+    thumbs.replaceChildren(...UPL.files.map((f, i) => h('div', {},
+      f.type.startsWith('image/') ? h('img', { src: f.url, alt: '' }) : 'PDF',
+      h('button', { 'aria-label': t('entfernen'), onclick: () => { URL.revokeObjectURL(f.url); UPL.files.splice(i, 1); zeigeThumbs(); knopf(); } }, '×'))));
+  };
+  const hoch = h('button', { class: 'btn pri', style: 'margin-top:12px' });
+  const knopf = () => { hoch.disabled = !UPL.files.length; hoch.textContent = t('hochladen') + (UPL.files.length ? ' (' + UPL.files.length + ')' : ''); };
+  const inp = h('input', { type: 'file', accept: 'image/*,application/pdf', multiple: true, class: 'hide', onchange: ev => {
+    Array.from(ev.target.files || []).forEach(f => { f.url = URL.createObjectURL(f); UPL.files.push(f); });
+    ev.target.value = ''; zeigeThumbs(); knopf();
+  } });
+  hoch.addEventListener('click', async () => {
+    if (UPL.objekt === KUNDE && !UPL.adresse.trim()) { toast(t('H_KUNDE_OHNE_ADRESSE')); return; }
+    const n = UPL.files.length;
+    try {
+      for (let i = 0; i < n; i++) {
+        laden(true, t('laedt') + ' ' + (i + 1) + ' / ' + n);
+        await ladeHoch(UPL.files[0], { art: UPL.art, objekt: UPL.objekt, kundenadresse: UPL.adresse, notiz: UPL.notiz, nr: i + 1 });
+        URL.revokeObjectURL(UPL.files[0].url); UPL.files.shift();
+      }
+      laden(false); UPL.notiz = ''; toast('✓ ' + t('hochgeladen') + ': ' + n); zeichne();
+    } catch (e) { fehler(e); zeigeThumbs(); knopf(); }
+  });
+  v.append(h('div', { class: 'card' }, h('h2', {}, t('fotos')),
+    h('label', {}, t('fotoArt')),
+    h('div', { class: 'chips' }, ['Foto', 'Schaden', 'Beleg', 'Sonstiges'].map(a => h('button', { class: 'chip' + (UPL.art === a ? ' on' : ''), onclick: () => { UPL.art = a; zeichne(); } }, a === 'Sonstiges' ? t('Sonstiges').split(' (')[0] : t(a)))),
+    h('label', {}, t('objekt')),
+    h('select', { onchange: ev => { UPL.objekt = ev.target.value; zeichne(); } }, optionen.map(o => h('option', { value: o, selected: UPL.objekt === o }, objLabel(o)))),
+    UPL.objekt === KUNDE ? [h('label', {}, t('adresse')), h('input', { value: UPL.adresse, placeholder: 'Hauptstraße 12, Ettlingen', oninput: ev => UPL.adresse = ev.target.value })] : null,
+    h('label', {}, t('notiz')), h('input', { value: UPL.notiz, oninput: ev => UPL.notiz = ev.target.value }),
+    h('button', { class: 'btn sec', style: 'margin-top:14px', onclick: () => inp.click() }, '📷 ' + t('fotoWaehlen')), inp, thumbs, hoch));
+  zeigeThumbs(); knopf();
+}
+async function ladeHoch(file, meta) {
+  let data, mime;
+  // Originale (JPEG bis 8 MB, PDF) unverändert senden, damit Aufnahmezeit und – falls vom Handy mitgegeben – Ort im Foto bleiben (U-07)
+  if (file.type === 'application/pdf' || (file.type === 'image/jpeg' && file.size <= 8 * 1024 * 1024)) { data = await alsBase64(file); mime = file.type; }
+  else { data = await verkleinern(file, 2560, 0.85); mime = 'image/jpeg'; }
+  const z = new Date(file.lastModified || Date.now()), p = n => String(n).padStart(2, '0');
+  const aufgenommen = z.getFullYear() + '-' + p(z.getMonth() + 1) + '-' + p(z.getDate()) + ' ' + p(z.getHours()) + ':' + p(z.getMinutes());
+  return call('upload', Object.assign({ data, mime, aufgenommen }, meta));
+}
+function alsBase64(file) {
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(file); });
+}
+function verkleinern(file, max, q) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file); const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      res(c.toDataURL('image/jpeg', q).split(',')[1]);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); alsBase64(file).then(res, rej); };
+    img.src = url;
+  });
+}
+
+/* ---------- Woche ---------- */
+function vWoche(v) {
+  v.append(h('div', { class: 'card' }, h('div', { class: 'sum', style: 'margin:0' }, h('span', {}, t('monat')), h('span', {}, zahl(S.monatStunden) + ' ' + t('std')))));
+  v.append(h('div', { class: 'card' }, h('h2', {}, t('meineTage')),
+    S.woche.length ? S.woche.map(d => h('div', { class: 'day' },
+      h('div', {}, h('b', {}, dKurz(d.datum)), h('div', { class: 'small muted' }, d.einsaetze.map(e => objLabel(e.objekt, true) + ': ' + zahl(e.stunden)).join(' · ') || t(d.art)),
+        d.hinweise.filter(c => c !== 'ZUKUNFT').length ? h('div', { class: 'xs', style: 'color:var(--warn)' }, '⚠ ' + d.hinweise.map(c => t('H_' + c)).join(' ')) : null),
+      h('div', { style: 'text-align:right;white-space:nowrap' }, d.art === 'Arbeit' ? [h('b', {}, zahl(d.arbeitszeit) + ' ' + t('std')), h('div', { class: 'xs muted' }, d.beginn + '–' + d.ende)] : h('span', { class: 'badge b-warn' }, t(d.art)),
+        h('div', {}, h('button', { class: 'btn link', style: 'padding:4px 0;font-size:14px', onclick: () => { EDIT = Object.assign({}, d, { quelle: 'Manuell' }); TAB = 'heute'; zeichne(); window.scrollTo(0, 0); } }, t('aendern')))))) : h('div', { class: 'muted' }, t('keineTage'))));
+  v.append(h('details', { class: 'card' }, h('summary', {}, t('datenschutz')), h('p', { class: 'small' }, t('ds'))));
+}
+
+/* ======================== Verwaltung (Kevin) ======================== */
+const HDE = c => (A.hinweisTexte && A.hinweisTexte[c]) || c;
+const prioTxt = p => ({ 1: 'Wichtig', 2: 'Normal', 3: 'Wenn Zeit ist' })[p] || 'Normal';
+async function neuLaden(msg) { laden(true, 'Aktualisiere …'); try { A = await call('admin'); S = await call('init'); laden(false); if (msg) toast(msg); zeichne(); } catch (e) { fehler(e); } }
+
+function aTeam(v) {
+  A.mitarbeiter.filter(m => m.rolle !== 'Admin').forEach(m => {
+    const linkFeld = h('input', { value: m.link || '(Link fehlt – linksErzeugen ausführen)', readonly: true, onclick: ev => ev.target.select() });
+    v.append(h('div', { class: 'card' },
+      h('div', { style: 'display:flex;justify-content:space-between;gap:8px' }, h('h2', { style: 'margin:0' }, m.name),
+        h('span', { class: 'badge ' + (m.heute ? 'b-ok' : 'b-warn') }, m.heute ? 'heute erfasst' : 'heute offen')),
+      h('div', { class: 'small muted' }, (m.beschaeftigung || '') + ' · Sprache ' + (m.sprache || 'de').toUpperCase() + ' · ' + zahl(m.monat) + ' Std. im Monat' + (m.letzterBesuch ? ' · zuletzt in der App ' + dDe(m.letzterBesuch.slice(0, 16)) : '')),
+      h('label', {}, 'Persönlicher Link (per WhatsApp schicken, auf dem Handy zum Startbildschirm hinzufügen)'), linkFeld,
+      h('button', { class: 'btn sec', style: 'margin-top:8px;min-height:44px;padding:10px', onclick: async () => { try { await navigator.clipboard.writeText(m.link); toast('Link kopiert'); } catch (e) { linkFeld.select(); toast('Link markiert – jetzt kopieren'); } } }, 'Link kopieren')));
+  });
+  v.append(h('div', { class: 'card' }, h('h2', {}, 'Einträge der letzten 3 Wochen'),
+    A.tage.length ? A.tage.map(d => h('div', { class: 'day' },
+      h('div', { style: 'min-width:0' }, h('b', {}, dKurz(d.datum) + ' · ' + d.name),
+        h('div', { class: 'small muted' }, d.art !== 'Arbeit' ? d.art : d.einsaetze.map(e => objLabel(e.objekt, true) + (e.kundenadresse ? ' (' + e.kundenadresse + ')' : '') + ': ' + zahl(e.stunden) + ' Std.' + (e.taetigkeit ? ' – ' + e.taetigkeit : '')).join(' · ')),
+        d.hinweise.length ? h('div', { class: 'xs', style: 'color:var(--warn)' }, '⚠ ' + d.hinweise.map(HDE).join('; ')) : null,
+        d.originaltext ? h('details', {}, h('summary', {}, 'Originaltext (' + d.quelle + ')'), h('div', { class: 'small' }, d.originaltext)) : h('div', { class: 'xs muted' }, d.quelle + ' · erfasst ' + dDe(d.erfasstAm))),
+      h('div', { style: 'text-align:right;white-space:nowrap' }, d.art === 'Arbeit' ? [h('b', {}, zahl(d.arbeitszeit) + ' Std.'), h('div', { class: 'xs muted' }, d.beginn + '–' + d.ende + ', ' + d.pause + ' Min.')] : ''))) : h('div', { class: 'muted' }, 'Noch keine Einträge.')));
+}
+
+function aAufgaben(v) {
+  const F = aAufgaben.f = aAufgaben.f || { fuer: 'ALLE', objekt: '', prio: 2, faellig: '', titel: '', beschreibung: '' };
+  const ma = A.mitarbeiter.filter(m => m.rolle !== 'Admin');
+  v.append(h('div', { class: 'card' }, h('h2', {}, 'Neue Aufgabe'),
+    h('label', {}, 'Für'), h('select', { onchange: ev => F.fuer = ev.target.value }, [h('option', { value: 'ALLE', selected: F.fuer === 'ALLE' }, 'Alle Mitarbeiter')].concat(ma.map(m => h('option', { value: m.id, selected: F.fuer === m.id }, m.name)))),
+    h('label', {}, 'Titel'), h('input', { value: F.titel, placeholder: 'z. B. Silikonfugen Bad 2. OG erneuern', oninput: ev => F.titel = ev.target.value }),
+    h('label', {}, 'Beschreibung (optional)'), h('textarea', { placeholder: 'Details, Material, Ansprechpartner …', oninput: ev => F.beschreibung = ev.target.value }, F.beschreibung),
+    h('div', { class: 'row' },
+      h('div', {}, h('label', {}, 'Objekt'), h('select', { onchange: ev => F.objekt = ev.target.value }, [h('option', { value: '' }, '–')].concat(A.objekte.map(o => h('option', { value: o, selected: F.objekt === o }, objLabel(o)))))),
+      h('div', {}, h('label', {}, 'Fällig'), h('input', { type: 'date', value: F.faellig, oninput: ev => F.faellig = ev.target.value }))),
+    h('label', {}, 'Priorität'), h('div', { class: 'chips' }, [1, 2, 3].map(p => h('button', { class: 'chip' + (F.prio === p ? ' on' : ''), onclick: () => { F.prio = p; zeichne(); } }, prioTxt(p)))),
+    h('div', { class: 'xs muted', style: 'margin-top:8px' }, 'Für rumänischsprachige Mitarbeiter wird die Aufgabe automatisch übersetzt. Sie erscheint sofort in der App, ganz oben bei „Wichtig“.'),
+    h('button', { class: 'btn pri', style: 'margin-top:12px', onclick: async () => {
+      if (!F.titel.trim()) { toast('Titel fehlt'); return; }
+      laden(true, 'Speichere Aufgabe …');
+      try { const r = await call('aufgabeNeu', F); aAufgaben.f = null; await neuLaden(r.brauchtRo && !r.uebersetzt ? 'Gespeichert – Übersetzung fehlgeschlagen, deutsch angezeigt' : 'Aufgabe gespeichert'); } catch (e) { fehler(e); }
+    } }, 'Aufgabe speichern')));
+  const liste = h('div', { class: 'card' }, h('h2', {}, 'Aufgaben'));
+  if (!A.aufgaben.length) liste.append(h('div', { class: 'muted' }, 'Keine Aufgaben.'));
+  A.aufgaben.forEach(a => liste.append(h('div', { class: 'task' }, h('div', { class: 'bar p' + a.prio }),
+    h('div', { style: 'flex:1;min-width:0' },
+      h('div', {}, h('span', { class: 'badge ' + (a.status === 'erledigt' ? 'b-ok' : 'b-warn') }, a.status), h('b', {}, a.titel)),
+      h('div', { class: 'small muted' }, ['für ' + a.fuerName, a.objekt ? objLabel(a.objekt) : '', a.faellig ? 'bis ' + dDe(a.faellig) : '', prioTxt(a.prio)].filter(Boolean).join(' · ')),
+      a.beschreibung ? h('div', { class: 'small', style: 'white-space:pre-wrap' }, a.beschreibung) : null,
+      a.status === 'erledigt' ? h('div', { class: 'small', style: 'color:var(--ok)' }, '✓ ' + dDe(a.erledigtAm) + ' von ' + (a.erledigtVon || '') + (a.rueckmeldung ? ': ' + a.rueckmeldung : '')) : null,
+      h('div', { class: 'row', style: 'margin-top:8px' },
+        h('button', { class: 'btn sec', style: 'min-height:40px;padding:8px;font-size:15px', onclick: () => status(a.id, a.status === 'offen' ? 'erledigt' : 'offen') }, a.status === 'offen' ? 'Als erledigt markieren' : 'Wieder öffnen'),
+        h('button', { class: 'btn sec', style: 'min-height:40px;padding:8px;font-size:15px', onclick: () => status(a.id, 'archiviert') }, 'Archivieren'))))));
+  v.append(liste);
+  async function status(id, s) { laden(true, '…'); try { await call('aufgabeStatus', { id, status: s }); await neuLaden(); } catch (e) { fehler(e); } }
+}
+
+function aKunden(v) {
+  const card = h('div', { class: 'card' }, h('h2', {}, 'Kundenaufträge'), h('div', { class: 'xs muted' }, 'Entstehen automatisch, wenn ein Mitarbeiter eine fremde Adresse nennt. Zuordnen, dann abrechnen.'));
+  if (!A.kunden.length) card.append(h('div', { class: 'muted', style: 'margin-top:10px' }, 'Noch keine Kundenaufträge.'));
+  A.kunden.forEach(k => {
+    const st = h('select', {}, ['zuzuordnen', 'zugeordnet', 'abgerechnet', 'kein Auftrag'].map(s => h('option', { value: s, selected: k.status === s }, s)));
+    const ku = h('input', { value: k.kunde || '', placeholder: 'Kunde / Auftraggeber' });
+    const no = h('input', { value: k.notiz || '', placeholder: 'Notiz, Rechnungsnummer …' });
+    card.append(h('div', { class: 'einsatz' }, h('b', {}, k.adresse),
+      h('div', { class: 'small muted' }, 'seit ' + dDe(k.erstmals) + ' · ' + k.mitarbeiter + ' · ' + zahl(k.stunden) + ' Std. erfasst'),
+      h('label', {}, 'Status'), st, h('label', {}, 'Kunde'), ku, h('label', {}, 'Notiz'), no,
+      h('button', { class: 'btn sec', style: 'margin-top:8px;min-height:44px;padding:10px', onclick: async () => { laden(true, '…'); try { await call('kundenauftrag', { id: k.id, status: st.value, kunde: ku.value, notiz: no.value }); await neuLaden('Gespeichert'); } catch (e) { fehler(e); } } }, 'Speichern')));
+  });
+  v.append(card);
+}
+
+function aDateien(v) {
+  v.append(h('div', { class: 'card' }, h('h2', {}, 'Letzte Fotos und Belege'),
+    h('div', { class: 'xs muted' }, 'Fotos liegen im Import-Ordner des Objekts (nächtliche Verarbeitung U-07), Belege im 00_Eingang (Ablage U-02).'),
+    A.dateien.length ? A.dateien.map(f => h('div', { class: 'day' },
+      h('div', { style: 'min-width:0' }, h('b', {}, f.art + ' · ' + objLabel(f.objekt)), h('div', { class: 'small muted' }, dDe(f.zeit) + ' · ' + f.name + (f.notiz ? ' · ' + f.notiz : ''))),
+      h('a', { href: f.link, target: '_blank', rel: 'noopener' }, 'Öffnen'))) : h('div', { class: 'muted', style: 'margin-top:10px' }, 'Noch keine Dateien.')));
+}
+
+function aStunden(v) {
+  const SATZ = 35, SG_MAX = 4499.84;
+  [A.monat, A.vormonat].forEach(mon => {
+    const zeilen = A.stunden.filter(z => z.monat === mon);
+    const card = h('div', { class: 'card' }, h('h2', {}, 'Stunden ' + mon.slice(5) + '/' + mon.slice(0, 4)));
+    if (!zeilen.length) { card.append(h('div', { class: 'muted' }, 'Keine Stunden.')); v.append(card); return; }
+    const ges = {};
+    zeilen.forEach(z => { (ges[z.gesellschaft] = ges[z.gesellschaft] || []).push(z); });
+    const tab = h('table', {}, h('tr', {}, h('th', {}, 'Objekt / Mitarbeiter'), h('th', { class: 'n' }, 'Std.'), h('th', { class: 'n' }, 'netto zu 35 €')));
+    Object.keys(ges).sort().forEach(g => {
+      const sum = ges[g].reduce((s, z) => s + z.stunden, 0);
+      tab.append(h('tr', {}, h('td', {}, h('b', {}, g)), h('td', { class: 'n' }, h('b', {}, zahl(sum))), h('td', { class: 'n' }, h('b', {}, (sum * SATZ).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })))));
+      ges[g].forEach(z => tab.append(h('tr', {}, h('td', { class: 'small' }, objLabel(z.objekt) + ' · ' + z.name), h('td', { class: 'n small' }, zahl(z.stunden)), h('td', {}))));
+      if (g === 'SG Beteiligungs' && sum * SATZ > SG_MAX) tab.append(h('tr', {}, h('td', { colspan: 3 }, h('div', { class: 'warn' }, 'SG-Obergrenze 4.499,84 € netto überschritten – ' + zahl(sum - SG_MAX / SATZ) + ' Std. auf andere Objekte verteilen.'))));
+    });
+    card.append(tab, h('div', { class: 'xs muted', style: 'margin-top:8px' }, 'Verrechnungssatz 35,00 € netto je produktive Stunde (Kalkulation 10_Personal). Kundenaufträge werden separat abgerechnet.'));
+    v.append(card);
+  });
+}
+
+start();
+</script>
+</body>
+</html>
