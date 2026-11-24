@@ -108,6 +108,24 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600;font-size:14px;m
 #viewer .txt{margin-top:10px;font-size:14.5px;text-align:center;max-width:640px}
 #viewer button{position:absolute;top:calc(10px + env(safe-area-inset-top));right:12px;border:0;border-radius:999px;width:44px;height:44px;background:rgba(255,255,255,.2);color:#fff;font-size:24px}
 .dayh{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+#qbar{position:fixed;left:10px;right:10px;bottom:calc(70px + env(safe-area-inset-bottom));z-index:15;background:var(--ink);color:#fff;border-radius:12px;padding:10px 14px;font-size:14.5px;display:flex;gap:10px;align-items:center;box-shadow:0 4px 14px rgba(0,0,0,.2);max-width:620px;margin:0 auto}
+#qbar.fehler{background:var(--bad)}
+#qbar .bar2{flex:1;height:6px;background:rgba(255,255,255,.25);border-radius:6px;overflow:hidden;min-width:60px}
+#qbar .bar2 i{display:block;height:100%;background:#fff;width:0;transition:width .2s}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:35;display:none;align-items:center;justify-content:center;padding:16px}
+#modal.on{display:flex}
+#modal .card{max-width:460px;width:100%;margin:0}
+.vgl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.vgl>div{background:#f7f7f4;border:1px solid var(--line);border-radius:10px;padding:8px;font-size:13.5px}
+.vgl b{display:block;font-size:12px;color:var(--muted);margin-bottom:2px}
+.vgl .neu{background:var(--acc-bg);border-color:#c9daf5}
+.pflicht{border:2px solid var(--warn);border-radius:12px;padding:10px;margin-top:10px;background:var(--warn-bg)}
+.pflicht.ok{border-color:#bfe3cb;background:var(--ok-bg)}
+.chk{display:flex;gap:10px;align-items:flex-start;margin-top:10px;font-size:15px}
+.chk input{width:24px;height:24px;min-height:0;flex:none;margin-top:2px}
+.qitem{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.qitem img{width:48px;height:48px;object-fit:cover;border-radius:8px;background:#ddd}
+.qitem .x{flex:1;min-width:0;font-size:14px}
 </style>
 </head>
 <body>
@@ -119,6 +137,8 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600;font-size:14px;m
 <nav id="nav"></nav>
 <div id="toast"></div>
 <div id="load"><div class="spin"></div><div id="loadText"></div></div>
+<div id="qbar" class="hide"></div>
+<div id="modal"></div>
 <div id="viewer"><button aria-label="×">×</button><img alt=""><div class="txt"></div></div>
 
 <script>
@@ -150,8 +170,18 @@ function linkEinfuegen() {
     inp, h('button', { class: 'btn pri', id: 'btnLink', style: 'margin-top:10px', onclick: ok }, 'Öffnen / Deschide'));
 }
 function senden(aktion, daten) {
-  if (API_URL) return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, credentials: 'omit', redirect: 'follow',
-    body: JSON.stringify({ token: TOKEN, aktion: aktion, daten: daten || {} }) }).then(r => r.json());
+  if (API_URL) {
+    // Kein Ladekreis für immer: Zeitlimit je Aufruf; reine Abfragen werden bei einem Netzfehler einmal wiederholt.
+    const lesen = ['init', 'monat', 'fotos', 'vorschau', 'bild', 'admin'].indexOf(aktion) >= 0;
+    const einmal = () => {
+      const ac = window.AbortController ? new AbortController() : null;
+      const to = setTimeout(() => ac && ac.abort(), aktion === 'auswerten' ? 70000 : 45000);
+      return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, credentials: 'omit', redirect: 'follow', signal: ac ? ac.signal : undefined,
+        body: JSON.stringify({ token: TOKEN, aktion: aktion, daten: daten || {} }) }).then(r => r.json()).finally(() => clearTimeout(to));
+    };
+    return einmal().catch(e => lesen ? new Promise(r => setTimeout(r, 1200)).then(einmal) : Promise.reject(e))
+      .catch(() => { throw new Error(t('netz')); });
+  }
   return new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(rej).api(TOKEN, aktion, daten || {}));
 }
 const KUNDE = 'Kundenauftrag', SONST = 'Sonstiges';
@@ -204,13 +234,26 @@ const I = {
     meineTage: 'Meine Tage', monat: 'Dieser Monat', keineTage: 'In diesem Monat gibt es keine Einträge.',
     datenschutz: 'Datenschutz', rueckfrage: 'Rückfrage', zusammenfassung: 'So habe ich es verstanden',
     fehler: 'Das hat nicht geklappt', nochmal: 'Bitte nochmal versuchen.', summeWarn: 'Die Stunden je Objekt ergeben zusammen',
+    netz: 'Keine Verbindung zum Server. Bitte nochmal versuchen.',
+    imHintergrund: 'Wird im Hintergrund hochgeladen – du kannst weiterarbeiten.', vorbereiten: 'Fotos werden vorbereitet …',
+    qLaeuft: 'Fotos werden hochgeladen', qOffen: 'offen', qFehler: 'Foto(s) nicht hochgeladen – antippen', qWarte: 'Warte auf Verbindung …', erneut: 'Erneut versuchen', qListe: 'Warteschlange',
+    summeOffen: 'Noch zu verteilen', summeZuViel: 'Zu viel verteilt', summeOk: 'Stunden je Objekt passen genau.', summeRegel: 'Die Stunden je Objekt müssen zusammen genau die Arbeitszeit ergeben.', restAuf: 'Rest hier eintragen',
+    kundeFotos: 'Fotos vom Kundenauftrag (Pflicht)', kundeFotoKnopf: 'Foto aufnehmen oder aus der Mediathek', kundeErstAdresse: 'Bitte zuerst die Adresse eintragen.',
+    kundeVorhanden: 'bereits hochgeladen', ohneFoto: 'Ich konnte kein Foto machen – ich bestätige das.', ohneFotoText: 'Was genau wurde beim Kunden gemacht? (Pflicht, mind. 15 Zeichen)',
+    fotoFehlt: 'Bitte ein Foto vom Kundenauftrag hinzufügen – oder bestätigen, dass es fehlt, und beschreiben, was gemacht wurde.', fotoWartet: 'Fotos werden noch hochgeladen …', fotoNichtFertig: 'Das Foto ist noch nicht hochgeladen. Bitte Verbindung prüfen und nochmal speichern.',
+    gesperrt: 'Dieser Tag kann nicht mehr direkt geändert werden (24 Stunden nach der ersten Erfassung). Deine Änderung geht als Antrag an Kevin – bis er sie übernimmt, gilt der bisherige Eintrag.',
+    gesperrtNeu: 'Dieser Tag liegt zu weit zurück, um ihn direkt nachzutragen. Dein Eintrag geht als Antrag an Kevin – er zählt, sobald Kevin ihn übernimmt.',
+    grund: 'Grund für die Änderung (Pflicht)', grundFehlt: 'Bitte den Grund angeben (mind. 10 Zeichen).', beantragen: 'Änderung beantragen', antragGesendet: 'Antrag an Kevin gesendet',
+    beantragt: 'Änderung beantragt – wartet auf Kevin', abgelehnt: 'Änderung von Kevin abgelehnt', aenderbarBis: 'änderbar bis',
+    E_SUMME: 'Die Stunden je Objekt müssen genau die Arbeitszeit ergeben.', E_ZUKUNFT: 'Arbeitszeit kann nicht für einen Tag in der Zukunft erfasst werden.',
     mikroHaengt: 'Das Mikrofon hat nicht reagiert. Bitte nochmal auf „Sprechen“ tippen – oder ins Textfeld tippen und das Mikrofon der Tastatur nutzen.',
     mikroAus: 'Das Mikrofon geht hier nicht – nutze das Mikrofon deiner Tastatur.',
     H_MAX10: 'Mehr als 10 Stunden am Tag sind nicht erlaubt.', H_PAUSE30: 'Bei mehr als 6 Stunden sind mindestens 30 Minuten Pause Pflicht.',
     H_PAUSE45: 'Bei mehr als 9 Stunden sind mindestens 45 Minuten Pause Pflicht.', H_SONNTAG: 'Sonntags wird nicht gearbeitet.',
     H_RUHEZEIT: 'Zwischen zwei Arbeitstagen müssen mindestens 11 Stunden Ruhe liegen.', H_SUMME: 'Die Stunden je Objekt passen nicht zur Arbeitszeit.',
     H_ZUKUNFT: 'Das Datum liegt in der Zukunft.', H_NACHTRAG: 'Nachtrag älter als 7 Tage.', H_MINIJOB: 'Achtung: Minijob-Grenze in diesem Monat erreicht. Bitte mit Kevin sprechen.',
-    H_KUNDE_OHNE_ADRESSE: 'Bitte die Adresse des Kunden angeben.',
+    H_KUNDE_OHNE_ADRESSE: 'Bitte die Adresse des Kunden angeben.', H_KUNDE_OHNE_FOTO: 'Kundenauftrag ohne Foto (Grund angegeben).',
+    E_ZEIT: 'Bitte Beginn, Ende und Pause prüfen – das Ende muss nach dem Beginn liegen und die Pause kürzer als die Arbeitszeit sein.', E_ADRESSE: 'Bitte die Adresse des Kunden angeben (Straße und Ort).', E_DATUM: 'Bitte ein gültiges Datum angeben.', E_ERLEDIGT: 'Diese Aufgabe ist bereits erledigt.', E_KI: 'Die automatische Auswertung hat gerade nicht geklappt. Bitte nochmal versuchen oder „Ohne Sprache eintragen“.',
     ds: 'Was wird gespeichert? Deine Arbeitszeiten (Datum, Beginn, Ende, Pause), an welchem Objekt du warst, deine Tätigkeit, Fotos/Belege und Rückmeldungen. Wofür? Für die gesetzliche Arbeitszeiterfassung, deine Lohnabrechnung und die Abrechnung der Arbeiten an die Eigentümer. Wer sieht es? Kevin Schreiber als Geschäftsführer der Immoselect GmbH und die Lohnbuchhaltung. Deine Fotos zu unseren Objekten (Baustellen) sehen in der App auch deine Kollegen – mit Vorname, Datum und Notiz; deine Arbeitszeiten, Belege und Fotos von Kundenaufträgen oder „Sonstiges“ sehen sie nicht. Ein noch nicht ausgewerteter gesprochener Text bleibt bis zum Auswerten nur auf deinem Handy. Gespeichert wird im Google-Konto der Firma; gesprochene oder getippte Texte werden zur Auswertung an Claude (Anthropic) übermittelt. Es gibt keine Ortung (GPS). Die Aufzeichnungen werden mindestens 2 Jahre aufbewahrt. Fragen, Auskunft oder Korrekturen: direkt an Kevin.'
   },
   ro: {
@@ -243,13 +286,26 @@ const I = {
     meineTage: 'Zilele mele', monat: 'Luna aceasta', keineTage: 'În luna aceasta nu există înregistrări.',
     datenschutz: 'Protecția datelor', rueckfrage: 'Întrebare', zusammenfassung: 'Așa am înțeles',
     fehler: 'Nu a mers', nochmal: 'Te rog încearcă din nou.', summeWarn: 'Orele pe imobile fac împreună',
+    netz: 'Nu există conexiune la server. Te rog încearcă din nou.',
+    imHintergrund: 'Se încarcă în fundal – poți lucra mai departe.', vorbereiten: 'Se pregătesc pozele …',
+    qLaeuft: 'Se încarcă pozele', qOffen: 'în așteptare', qFehler: 'poză/poze neîncărcate – apasă aici', qWarte: 'Aștept conexiunea …', erneut: 'Încearcă din nou', qListe: 'În curs de încărcare',
+    summeOffen: 'Mai sunt de împărțit', summeZuViel: 'Prea multe ore împărțite', summeOk: 'Orele pe imobile se potrivesc exact.', summeRegel: 'Orele pe imobile trebuie să dea împreună exact timpul de lucru.', restAuf: 'Pune restul aici',
+    kundeFotos: 'Poze de la client (obligatoriu)', kundeFotoKnopf: 'Fă o poză sau alege din galerie', kundeErstAdresse: 'Te rog scrie mai întâi adresa.',
+    kundeVorhanden: 'deja încărcate', ohneFoto: 'Nu am putut face poză – confirm acest lucru.', ohneFotoText: 'Ce anume ai lucrat la client? (obligatoriu, min. 15 caractere)',
+    fotoFehlt: 'Te rog adaugă o poză de la client – sau confirmă că lipsește și descrie ce ai lucrat.', fotoWartet: 'Pozele se încarcă încă …', fotoNichtFertig: 'Poza nu este încă încărcată. Te rog verifică conexiunea și salvează din nou.',
+    gesperrt: 'Ziua aceasta nu mai poate fi modificată direct (24 de ore după prima înregistrare). Modificarea ta merge ca cerere la Kevin – până o acceptă, rămâne valabilă înregistrarea veche.',
+    gesperrtNeu: 'Ziua aceasta este prea veche pentru a fi completată direct. Înregistrarea ta merge ca cerere la Kevin – contează după ce o acceptă.',
+    grund: 'Motivul modificării (obligatoriu)', grundFehlt: 'Te rog scrie motivul (min. 10 caractere).', beantragen: 'Cere modificarea', antragGesendet: 'Cererea a fost trimisă lui Kevin',
+    beantragt: 'Modificare cerută – așteaptă răspunsul lui Kevin', abgelehnt: 'Modificare respinsă de Kevin', aenderbarBis: 'modificabil până la',
+    E_SUMME: 'Orele pe imobile trebuie să dea exact timpul de lucru.', E_ZUKUNFT: 'Timpul de lucru nu poate fi înregistrat pentru o zi din viitor.',
     mikroHaengt: 'Microfonul nu a răspuns. Apasă din nou pe „Vorbește” – sau atinge câmpul de text și folosește microfonul de la tastatură.',
     mikroAus: 'Microfonul nu merge aici – folosește microfonul de la tastatură.',
     H_MAX10: 'Mai mult de 10 ore pe zi nu sunt permise.', H_PAUSE30: 'Peste 6 ore de lucru, pauza minimă este de 30 de minute.',
     H_PAUSE45: 'Peste 9 ore de lucru, pauza minimă este de 45 de minute.', H_SONNTAG: 'Duminica nu se lucrează.',
     H_RUHEZEIT: 'Între două zile de lucru trebuie să fie cel puțin 11 ore de odihnă.', H_SUMME: 'Orele pe imobile nu se potrivesc cu timpul de lucru.',
     H_ZUKUNFT: 'Data este în viitor.', H_NACHTRAG: 'Înregistrare cu întârziere (peste 7 zile).', H_MINIJOB: 'Atenție: limita de minijob pe luna aceasta este atinsă. Te rog vorbește cu Kevin.',
-    H_KUNDE_OHNE_ADRESSE: 'Te rog spune adresa clientului.',
+    H_KUNDE_OHNE_ADRESSE: 'Te rog spune adresa clientului.', H_KUNDE_OHNE_FOTO: 'Lucrare la client fără poză (motiv indicat).',
+    E_ZEIT: 'Te rog verifică începutul, sfârșitul și pauza – sfârșitul trebuie să fie după început, iar pauza mai scurtă decât timpul de lucru.', E_ADRESSE: 'Te rog scrie adresa clientului (strada și orașul).', E_DATUM: 'Te rog alege o dată validă.', E_ERLEDIGT: 'Sarcina aceasta este deja terminată.', E_KI: 'Analiza automată nu a mers acum. Te rog încearcă din nou sau „Introdu fără voce”.',
     ds: 'Ce se salvează? Orele tale de lucru (data, început, sfârșit, pauză), la ce imobil ai fost, ce ai lucrat, poze/bonuri și mesajele tale. Pentru ce? Pentru evidența legală a timpului de lucru, salariul tău și facturarea lucrărilor către proprietari. Cine vede? Kevin Schreiber, director al Immoselect GmbH, și contabilitatea de salarii. Pozele tale de la imobilele noastre (șantiere) le văd în aplicație și colegii tăi – cu prenumele, data și nota; orele tale, bonurile și pozele de la clienți sau „Altele” nu le văd. Un text vorbit care nu a fost încă analizat rămâne până la analiză doar pe telefonul tău. Datele sunt salvate în contul Google al firmei; textele vorbite sau scrise sunt trimise la Claude (Anthropic) pentru analiză. Nu există localizare (GPS). Înregistrările se păstrează cel puțin 2 ani. Întrebări, informații sau corecturi: direct la Kevin.'
   }
 };
@@ -288,7 +344,14 @@ function call(aktion, daten) {
 }
 function toast(m) { const x = document.getElementById('toast'); x.textContent = m; x.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => x.classList.remove('on'), 2600); }
 function laden(an, text) { document.getElementById('load').classList.toggle('on', !!an); document.getElementById('loadText').textContent = text || ''; }
-function fehler(e) { laden(false); toast(t('fehler') + ': ' + (e && e.message || e)); console.error(e); }
+// Fehlermeldungen des Servers beginnen mit einem Kennwort (z. B. „SUMME: …“); die App zeigt dazu den Text in der Sprache des Mitarbeiters.
+function fehlerText(e) {
+  const m = String(e && e.message || e || '');
+  const k = /^([A-Z_]+): ([\s\S]*)$/.exec(m);
+  if (!k) return m;
+  return (I[L]['E_' + k[1]] || (k[1] === 'FOTO_PFLICHT' ? t('fotoFehlt') : k[1] === 'GRUND_FEHLT' ? t('grundFehlt') : k[2]));
+}
+function fehler(e) { laden(false); toast(t('fehler') + ': ' + fehlerText(e)); console.error(e); }
 const zahl = x => (Math.round((Number(x) || 0) * 100) / 100).toLocaleString(L === 'ro' ? 'ro-RO' : 'de-DE', { maximumFractionDigits: 2 });
 const dKurz = d => { const p = d.split('-'); const w = new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay(); return TAGE[L][w] + ' ' + p[2] + '.' + p[1] + '.'; };
 const dLang = d => { const p = d.split('-'); const w = new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay(); return TAGE_LANG[L][w] + ', ' + p[2] + '.' + p[1] + '.' + p[0]; };
@@ -336,6 +399,11 @@ async function start() {
     if (S.me.rolle === 'Admin' && TAB === 'heute') TAB = 'team';
     // Nicht neu zeichnen, während gerade getippt oder etwas bearbeitet wird.
     if (!gemerkt || !beschaeftigt()) zeichne(); else merke();
+    start.zuletzt = Date.now();
+    qLaden();
+    if (S.me.rolle === 'Admin') pruefHinweis();
+    // Rückblick und Fotos schon im Hintergrund holen, damit die Reiter sofort da sind
+    else setTimeout(() => { if (!RB.data && !RB.laedt) { RB.ma = null; ladeMonat(null, null); } }, 1500);
   } catch (e) {
     if (gemerkt) { toast(t('fehler') + ' – ' + t('nochmal')); return; }
     const m = String(e.message || e);
@@ -344,6 +412,23 @@ async function start() {
         : I.de.linkFehlt + ' / ' + I.ro.linkFehlt)
       : m + ' – Bitte Seite neu laden. / Te rog reîncarcă pagina.'), m === 'Link ungültig' ? linkEinfuegen() : null);
   }
+}
+// Kommt die App aus dem Hintergrund zurück (neuer Tag, neue Aufgaben): still auffrischen.
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden || !S || !API_URL) return;
+  if (S.datum !== heuteLokal() || Date.now() - (start.zuletzt || 0) > 5 * 60000) auffrischen();
+});
+window.addEventListener('pageshow', ev => { if (ev.persisted && S && (S.datum !== heuteLokal())) auffrischen(); });
+async function auffrischen() {
+  if (auffrischen.laeuft) return; auffrischen.laeuft = true;
+  try {
+    const frisch = await call('init'); const admin = frisch.me.rolle === 'Admin' ? await call('admin') : null;
+    const tagWechsel = S.datum !== frisch.datum;
+    S = frisch; A = admin; start.zuletzt = Date.now();
+    if (tagWechsel) { RB.data = null; RB.monat = null; NEUERF = false; if (EDIT && EDIT.quelle !== 'Sprache') EDIT = null; }
+    if (!beschaeftigt()) zeichne(); else merke();
+    if (A) pruefHinweis();
+  } catch (e) { } finally { auffrischen.laeuft = false; }
 }
 function zeichne() {
   merke();
@@ -357,7 +442,9 @@ function zeichne() {
   const namen = { team: 'Team', kunden: 'Kunden', dateien: 'Fotos', stunden: 'Stunden' };
   tabs.forEach(k => nav.append(h('button', { class: TAB === k ? 'on' : '', onclick: () => { TAB = k; EDIT = null; NEUERF = false; ADM_RB = null; zeichne(); window.scrollTo(0, 0); } },
     icon(ICONS[k === 'dateien' ? 'fotos' : k]), namen[k] && S.me.rolle === 'Admin' ? namen[k] : (S.me.rolle === 'Admin' && k === 'aufgaben' ? 'Aufgaben' : t(k)),
-    k === 'aufgaben' && neu && S.me.rolle !== 'Admin' ? h('span', { class: 'dot' }, neu) : null)));
+    k === 'aufgaben' && neu && S.me.rolle !== 'Admin' ? h('span', { class: 'dot' }, neu) : null,
+    k === 'team' && A && pruefAnzahl() ? h('span', { class: 'dot' }, pruefAnzahl()) : null)));
+  qStatus();
   const v = document.getElementById('view'); v.replaceChildren();
   const views = { heute: vHeute, aufgaben: S.me.rolle === 'Admin' ? aAufgaben : vAufgaben, fotos: vFotos, woche: vWoche, team: aTeam, kunden: aKunden, dateien: aDateien, stunden: aStunden };
   (views[TAB] || vHeute)(v);
@@ -370,6 +457,16 @@ document.querySelectorAll('#lang button').forEach(b => b.addEventListener('click
 }));
 
 /* ---------- Heute ---------- */
+// Nach dem Speichern: Bestätigung und alle Prüfhinweise des Servers (Sonntag, Ruhezeit, Pausen …) gut sichtbar zeigen.
+function hinweiseZeigen(r) {
+  const codes = (r && r.hinweise || []).filter(c => c !== 'ZUKUNFT' && c !== 'KUNDE_OHNE_FOTO');
+  const kopf = r && r.antrag ? '📨 ' + t('antragGesendet') : '✓ ' + t('gespeichert') + (r && r.datum && r.datum !== S.datum ? ' (' + dKurz(r.datum) + ')' : '');
+  if (!codes.length) { toast(kopf); return; }
+  const m = document.getElementById('modal');
+  m.replaceChildren(h('div', { class: 'card' }, h('h2', {}, kopf), hinweisBox(codes),
+    h('button', { class: 'btn pri', style: 'margin-top:10px', onclick: () => m.classList.remove('on') }, 'OK')));
+  m.classList.add('on');
+}
 function hinweisBox(codes) {
   codes = (codes || []).filter(c => c && c !== 'ZUKUNFT');
   return codes.length ? h('div', { class: 'warn' }, codes.map(c => h('div', {}, '⚠ ' + t('H_' + c)))) : null;
@@ -432,7 +529,7 @@ function vHeute(v) {
 }
 async function standardtag() {
   laden(true, t('speichern') + ' …');
-  try { const r = await call('standardtag', { datum: S.datum }); S = await call('init'); RB.data = null; laden(false); toast('✓ ' + t('gespeichert')); zeichne(); if (r.hinweise && r.hinweise.length) toast('⚠ ' + t('H_' + r.hinweise[0])); }
+  try { const r = await call('standardtag', {}); S = await call('init'); RB.data = null; cacheWeg('monat'); laden(false); zeichne(); hinweiseZeigen(r); }
   catch (e) { fehler(e); }
 }
 async function auswerten(text) {
@@ -500,62 +597,171 @@ function diktat(ta, btn) {
   los(1);
 }
 
+// Uhrzeit in Berlin als „JJJJ-MM-TT HH:MM“ (wie auf dem Server) – für die 24-Stunden-Frist.
+function jetztBerlin() {
+  try {
+    const p = {}; new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
+      .formatToParts(new Date()).forEach(x => p[x.type] = x.value);
+    return p.year + '-' + p.month + '-' + p.day + ' ' + (p.hour === '24' ? '00' : p.hour) + ':' + p.minute;
+  } catch (e) { return heuteLokal() + ' 00:00'; }
+}
+const adresseGleich = (a, b) => { const n = x => String(x || '').toLowerCase().replace(/straße/g, 'str').replace(/strasse/g, 'str').replace(/[^a-z0-9äöü]/g, ''); return !!n(a) && n(a) === n(b); };
+// Darf dieser Tag direkt gespeichert werden, oder geht es als Antrag an Kevin?
+function tagInfo(datum) {
+  if (S.heute && S.heute.datum === datum) return S.heute;
+  return (S.woche || []).find(d => d.datum === datum) || (RB.data && !RB.ma && (RB.data.tage || []).find(d => d.datum === datum)) || null;
+}
+function istGesperrt(datum, E) {
+  if (E && E.zwingendAntrag) return true;
+  const info = tagInfo(datum);
+  if (info) return !!info.aenderbarBis && jetztBerlin() > info.aenderbarBis;
+  return datum < (S.neuAb || S.datum);
+}
+const zahlEin = v => { const x = Number(String(v).replace(',', '.').trim()); return String(v).trim() === '' || isNaN(x) ? null : Math.max(0, Math.round(x * 100) / 100); };
+
 /* ---------- Editor (Bestätigen / Ändern) ---------- */
 function editor(v) {
   const E = EDIT;
-  E.einsaetze = (E.einsaetze || []).map(e => Object.assign({ objekt: S.me.std.objekt, stunden: null, taetigkeit: '', kundenadresse: '' }, e));
+  E.einsaetze = (E.einsaetze || []).map(e => Object.assign({ objekt: S.me.std.objekt, stunden: null, taetigkeit: '', kundenadresse: '', fotos: [], ohneFoto: false, ohneFotoGrund: '' }, e));
+  if (E.art === 'Arbeit' && !E.einsaetze.length) E.einsaetze.push({ objekt: S.me.std.objekt, stunden: null, taetigkeit: '', kundenadresse: '', fotos: [], ohneFoto: false, ohneFotoGrund: '' });
   const optionen = S.objekte.map(o => o.name).concat([KUNDE, SONST]);
+  const gesperrt = istGesperrt(E.datum, E);
   const card = h('div', { class: 'card' }, h('h2', {}, t('pruefen')));
   if (E.zusammenfassung) card.append(h('div', { class: 'info' }, h('b', {}, t('zusammenfassung') + ': '), E.zusammenfassung));
   if (E.rueckfrage) card.append(h('div', { class: 'warn' }, h('b', {}, t('rueckfrage') + ': '), E.rueckfrage));
-  card.append(h('label', {}, t('datum')), h('input', { type: 'date', value: E.datum, max: S.datum, onchange: ev => { E.datum = ev.target.value; } }));
+  // Ein bestehender Tag bleibt auf seinem Datum (sonst entstünde eine Doppelerfassung); neue Einträge dürfen das Datum wählen.
+  card.append(h('label', {}, t('datum')), h('input', { type: 'date', id: 'edDatum', value: E.datum, max: S.datum, disabled: !!E.tagId,
+    onchange: ev => { if (/^\d{4}-\d{2}-\d{2}$/.test(ev.target.value)) { E.datum = ev.target.value; E.zwingendAntrag = false; zeichne(); } else ev.target.value = E.datum; } }));
+  if (gesperrt) card.append(h('div', { class: 'warn', id: 'edGesperrt' }, '🔒 ' + (tagInfo(E.datum) ? t('gesperrt') : t('gesperrtNeu'))));
+  else { const info = tagInfo(E.datum); if (info && info.aenderbarBis) card.append(h('div', { class: 'xs muted', style: 'margin-top:6px' }, t('aenderbarBis') + ' ' + dDe(info.aenderbarBis))); }
   card.append(h('label', {}, t('art')), h('div', { class: 'chips' }, ['Arbeit', 'Urlaub', 'Krank', 'Feiertag'].map(a =>
-    h('button', { class: 'chip' + (E.art === a ? ' on' : ''), onclick: () => { E.art = a; zeichne(); } }, t(a)))));
-  const live = h('div', {});
+    h('button', { class: 'chip' + (E.art === a ? ' on' : ''), onclick: () => {
+      // Wechsel von Urlaub/Krank/Feiertag zurück auf Arbeit: Standardzeiten, -pause und -objekt übernehmen, statt leer/0 zu speichern
+      if (a === 'Arbeit' && E.art !== 'Arbeit') { E.beginn = E.beginn || S.me.std.beginn; E.ende = E.ende || S.me.std.ende; E.pause = S.me.std.pause; }
+      E.art = a;
+      zeichne(); } }, t(a)))));
+  const live = h('div', { id: 'edLive' });
+  const az = () => Math.round(Math.max(0, (minuten(E.ende) - minuten(E.beginn) - (Number(E.pause) || 0)) / 60) * 100) / 100;
   const rechne = () => {
-    const az = Math.max(0, (minuten(E.ende) - minuten(E.beginn) - (Number(E.pause) || 0)) / 60);
-    const summe = E.einsaetze.reduce((s, e) => s + (Number(e.stunden) || 0), 0);
+    if (E.einsaetze.length === 1) { E.einsaetze[0].stunden = az(); const f = document.getElementById('std0'); if (f && document.activeElement !== f) f.value = String(E.einsaetze[0].stunden).replace('.', L === 'ro' || L === 'de' ? ',' : '.'); }
+    const summe = Math.round(E.einsaetze.reduce((s, e) => s + (Number(e.stunden) || 0), 0) * 100) / 100;
+    const diff = Math.round((az() - summe) * 100) / 100;
     const codes = [];
-    if (az > 10) codes.push('MAX10');
-    if (az > 9 && E.pause < 45) codes.push('PAUSE45'); else if (az > 6 && E.pause < 30) codes.push('PAUSE30');
-    if (E.einsaetze.some(e => e.objekt === KUNDE && !String(e.kundenadresse || '').trim())) codes.push('KUNDE_OHNE_ADRESSE');
-    live.replaceChildren(...[h('div', { class: 'sum' }, h('span', {}, t('arbeitszeit')), h('span', {}, zahl(az) + ' ' + t('std'))),
-      E.einsaetze.every(e => e.stunden !== null && e.stunden !== '') && Math.abs(summe - az) > 0.1 ? h('div', { class: 'warn' }, '⚠ ' + t('summeWarn') + ' ' + zahl(summe) + ' ' + t('std') + '.') : null,
-      hinweisBox(codes)].filter(Boolean));
+    const A_ = az();
+    if (A_ > 10) codes.push('MAX10');
+    if (A_ > 9 && E.pause < 45) codes.push('PAUSE45'); else if (A_ > 6 && E.pause < 30) codes.push('PAUSE30');
+    if (new Date(E.datum + 'T12:00:00').getDay() === 0) codes.push('SONNTAG');
+    live.replaceChildren(h('div', { class: 'sum' }, h('span', {}, t('arbeitszeit')), h('span', {}, zahl(A_) + ' ' + t('std'))),
+      E.einsaetze.length > 1 ? (Math.abs(diff) < 0.01
+        ? h('div', { class: 'xs', style: 'color:var(--ok);margin-top:4px' }, '✓ ' + t('summeOk'))
+        : h('div', { class: 'bad', id: 'edSumme' }, '⚠ ' + (diff > 0 ? t('summeOffen') : t('summeZuViel')) + ': ' + zahl(Math.abs(diff)) + ' ' + t('std') + '. ' + t('summeRegel'))) : null,
+      hinweisBox(codes.concat((E.hinweise || []).filter(c => ['SONNTAG', 'MAX10', 'PAUSE30', 'PAUSE45', 'SUMME', 'KUNDE_OHNE_ADRESSE'].indexOf(c) < 0))));
   };
+  E.neuZeichnen = rechne;
   if (E.art === 'Arbeit') {
     card.append(h('div', { class: 'row' },
       h('div', {}, h('label', {}, t('beginn')), h('input', { type: 'time', value: E.beginn, oninput: ev => { E.beginn = ev.target.value; rechne(); } })),
       h('div', {}, h('label', {}, t('ende')), h('input', { type: 'time', value: E.ende, oninput: ev => { E.ende = ev.target.value; rechne(); } }))));
+    const pausen = [0, 15, 30, 45, 60, 75, 90]; if (pausen.indexOf(Number(E.pause)) < 0) pausen.push(Number(E.pause) || 0); pausen.sort((a, b) => a - b);
     card.append(h('label', {}, t('pauseMin')), h('select', { onchange: ev => { E.pause = Number(ev.target.value); rechne(); } },
-      [0, 15, 30, 45, 60, 75, 90].map(p => h('option', { value: p, selected: Number(E.pause) === p }, p + ' ' + t('min')))));
+      pausen.map(p => h('option', { value: p, selected: Number(E.pause) === p }, p + ' ' + t('min')))));
     E.einsaetze.forEach((e, i) => {
       const box = h('div', { class: 'einsatz' },
         h('label', {}, t('objekt')),
         h('select', { onchange: ev => { e.objekt = ev.target.value; zeichne(); } }, optionen.map(o => h('option', { value: o, selected: e.objekt === o }, objLabel(o)))),
-        e.objekt === KUNDE ? [h('label', {}, t('adresse')), h('input', { value: e.kundenadresse || '', placeholder: 'Hauptstraße 12, Ettlingen', oninput: ev => { e.kundenadresse = ev.target.value; rechne(); } })] : null,
+        e.objekt === KUNDE ? [h('label', {}, t('adressePflicht')), h('input', { value: e.kundenadresse || '', placeholder: 'Hauptstraße 12, Ettlingen', oninput: ev => { e.kundenadresse = ev.target.value; } })] : null,
         h('div', { class: 'row' },
-          h('div', { style: 'flex:0 0 110px' }, h('label', {}, t('stunden')), h('input', { type: 'number', inputmode: 'decimal', step: '0.25', min: '0', max: '12', value: e.stunden === null ? '' : e.stunden, oninput: ev => { e.stunden = ev.target.value === '' ? null : Number(ev.target.value.replace(',', '.')); rechne(); } })),
+          h('div', { style: 'flex:0 0 110px' }, h('label', {}, t('stunden')),
+            // Text mit Dezimaltastatur statt type=number: „2,5“ wird auf allen Handys richtig verstanden.
+            h('input', { type: 'text', inputmode: 'decimal', id: 'std' + i, readonly: E.einsaetze.length === 1, value: e.stunden === null ? '' : String(e.stunden).replace('.', ','),
+              oninput: ev => { e.stunden = zahlEin(ev.target.value); rechne(); } })),
           h('div', {}, h('label', {}, t('taetigkeit')), h('input', { value: e.taetigkeit || '', oninput: ev => { e.taetigkeit = ev.target.value; } }))),
-        E.einsaetze.length > 1 ? h('button', { class: 'btn link', style: 'text-align:left;padding-left:0;color:var(--bad)', onclick: () => { E.einsaetze.splice(i, 1); zeichne(); } }, t('entfernen')) : null);
+        E.einsaetze.length > 1 ? h('div', { class: 'row', style: 'margin-top:4px' },
+          h('button', { class: 'btn link', style: 'text-align:left;padding-left:0', onclick: () => {
+            const andere = E.einsaetze.reduce((s, x) => x === e ? s : s + (Number(x.stunden) || 0), 0);
+            e.stunden = Math.max(0, Math.round((az() - andere) * 100) / 100); zeichne(); } }, '↧ ' + t('restAuf')),
+          h('button', { class: 'btn link', style: 'text-align:right;color:var(--bad)', onclick: () => { E.einsaetze.splice(i, 1); zeichne(); } }, t('entfernen'))) : null,
+        e.objekt === KUNDE ? kundenFotoBox(E, e) : null);
       card.append(box);
     });
-    card.append(h('button', { class: 'btn link', style: 'text-align:left;padding-left:0', onclick: () => { E.einsaetze.push({ objekt: S.me.std.objekt, stunden: null, taetigkeit: '', kundenadresse: '' }); zeichne(); } }, t('weiteres')));
+    card.append(h('button', { class: 'btn link', style: 'text-align:left;padding-left:0', onclick: () => {
+      E.einsaetze.push({ objekt: S.me.std.objekt, stunden: E.einsaetze.length === 1 ? 0 : null, taetigkeit: '', kundenadresse: '', fotos: [], ohneFoto: false, ohneFotoGrund: '' }); zeichne(); } }, t('weiteres')));
     card.append(live); rechne();
   }
-  card.append(h('button', { class: 'btn ok', style: 'margin-top:14px', onclick: speichern }, t('speichern')),
+  if (gesperrt) card.append(h('label', {}, t('grund')), h('textarea', { id: 'edGrund', style: 'min-height:80px', value: E.grund || '', oninput: ev => { E.grund = ev.target.value; } }));
+  card.append(h('button', { class: 'btn ok', id: 'btnSpeichern', style: 'margin-top:14px', onclick: speichern }, gesperrt ? '📨 ' + t('beantragen') : t('speichern')),
     h('button', { class: 'btn link', onclick: () => { EDIT = null; zeichne(); } }, t('abbrechen')));
   v.append(card);
 }
+// Kundenauftrag: Foto ist Pflicht. Nur wenn das wirklich nicht ging: ausdrücklich bestätigen und beschreiben, was gemacht wurde.
+function vorhandeneKundenFotos(E, e) { return (S.kundenFotos || []).filter(f => adresseGleich(f.adresse, e.kundenadresse) && (f.datum === E.datum || f.zeit === E.datum)); }
+function kundeOk(E, e) { return e.fotos.length > 0 || (e.fotoIds || []).length > 0 || vorhandeneKundenFotos(E, e).length > 0 || (e.ohneFoto && String(e.ohneFotoGrund || '').trim().length >= 15); }
+function kundenFotoBox(E, e) {
+  const vorh = vorhandeneKundenFotos(E, e);
+  const box = h('div', { class: 'pflicht' + (kundeOk(E, e) ? ' ok' : '') });
+  const inp = h('input', { type: 'file', accept: 'image/*', multiple: true, class: 'hide', onchange: async ev => {
+    const files = Array.from(ev.target.files || []); ev.target.value = '';
+    if (!files.length) return;
+    laden(true, t('vorbereiten'));
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const it = await qNeu(files[i], { art: 'Foto', objekt: KUNDE, kundenadresse: e.kundenadresse.trim(), notiz: e.taetigkeit || '', nr: e.fotos.length + 1 });
+        const f = { uid: it.uid, vorschau: it.vorschau, id: '' }; e.fotos.push(f);
+        qWarten(it.uid).then(r => { f.id = r && r.id || ''; }, () => { f.fehler = true; });
+      }
+      e.ohneFoto = false;
+    } catch (x) { fehler(x); }
+    laden(false); zeichne();
+  } });
+  box.append(h('b', {}, '📷 ' + t('kundeFotos')),
+    vorh.length ? h('div', { class: 'xs', style: 'color:var(--ok)' }, '✓ ' + vorh.length + ' ' + t('kundeVorhanden')) : null,
+    e.fotos.length ? h('div', { class: 'thumbs' }, e.fotos.map(f => h('div', {}, f.vorschau ? h('img', { src: 'data:image/jpeg;base64,' + f.vorschau, alt: '' }) : '📷'))) : null,
+    h('button', { class: 'btn sec', style: 'margin-top:8px;min-height:46px;padding:10px', onclick: () => {
+      if (!String(e.kundenadresse || '').trim()) { toast(t('kundeErstAdresse')); return; } inp.click(); } }, '📷 ' + t('kundeFotoKnopf')), inp);
+  if ((e.fotoIds || []).length) box.insertBefore(h('div', { class: 'xs', style: 'color:var(--ok)' }, '✓ ' + e.fotoIds.length + ' ' + t('kundeVorhanden')), box.children[1] || null);
+  if (!e.fotos.length && !vorh.length && !(e.fotoIds || []).length) {
+    box.append(h('label', { class: 'chk' }, h('input', { type: 'checkbox', checked: !!e.ohneFoto, onchange: ev => { e.ohneFoto = ev.target.checked; zeichne(); } }), h('span', {}, t('ohneFoto'))));
+    if (e.ohneFoto) box.append(h('label', {}, t('ohneFotoText')), h('textarea', { style: 'min-height:80px', value: e.ohneFotoGrund || '', oninput: ev => {
+      e.ohneFotoGrund = ev.target.value; box.classList.toggle('ok', kundeOk(E, e)); } }));
+  }
+  return box;
+}
 async function speichern() {
   const E = EDIT;
-  laden(true, t('speichern') + ' …');
+  // Prüfen vor dem Senden – mit verständlicher Meldung statt eines Serverfehlers
+  const az = Math.round(Math.max(0, (minuten(E.ende) - minuten(E.beginn) - (Number(E.pause) || 0)) / 60) * 100) / 100;
+  if (E.art === 'Arbeit') {
+    if (minuten(E.ende) <= minuten(E.beginn) || az <= 0) { toast(t('E_ZEIT')); return; }
+    if (E.einsaetze.length === 1) E.einsaetze[0].stunden = az;
+    const summe = Math.round(E.einsaetze.reduce((s, e) => s + (Number(e.stunden) || 0), 0) * 100) / 100;
+    if (E.einsaetze.some(e => e.stunden === null) || Math.abs(summe - az) > 0.01) { toast('⚠ ' + t('summeRegel')); const x = document.getElementById('edSumme'); if (x) x.scrollIntoView({ block: 'center' }); return; }
+    if (E.einsaetze.some(e => e.objekt === KUNDE && !String(e.kundenadresse || '').trim())) { toast(t('E_ADRESSE')); return; }
+    if (E.einsaetze.some(e => e.objekt === KUNDE && !kundeOk(E, e))) { toast(t('fotoFehlt')); return; }
+  }
+  const gesperrt = istGesperrt(E.datum, E);
+  if (gesperrt && String(E.grund || '').trim().length < 10) { toast(t('grundFehlt')); const g = document.getElementById('edGrund'); if (g) g.focus(); return; }
   try {
-    const r = await call('speichern', { tag: { datum: E.datum, art: E.art, beginn: E.beginn, ende: E.ende, pause: E.pause, einsaetze: E.einsaetze }, quelle: E.quelle || 'Manuell', originaltext: E.originaltext || '' });
+    // Fotos des Kundenauftrags müssen erst ankommen (höchstens 90 Sekunden warten)
+    const offen = [];
+    E.einsaetze.forEach(e => (e.fotos || []).forEach(f => { if (!f.id && !f.fehler) offen.push(f); }));
+    if (offen.length) {
+      laden(true, t('fotoWartet'));
+      const bis = Date.now() + 90000;
+      while (offen.some(f => !f.id && !f.fehler) && Date.now() < bis) await new Promise(r => setTimeout(r, 400));
+      if (E.einsaetze.some(e => e.objekt === KUNDE && (e.fotos || []).length && !(e.fotos || []).some(f => f.id) && !vorhandeneKundenFotos(E, e).length)) { laden(false); toast(t('fotoNichtFertig')); return; }
+    }
+    laden(true, t('speichern') + ' …');
+    const einsaetze = E.einsaetze.map(e => ({ objekt: e.objekt, stunden: e.stunden, taetigkeit: e.taetigkeit, kundenadresse: e.kundenadresse,
+      fotoIds: (e.fotoIds || []).concat((e.fotos || []).filter(f => f.id).map(f => f.id)), ohneFoto: !!e.ohneFoto, ohneFotoGrund: e.ohneFotoGrund || '' }));
+    const r = await call('speichern', { tag: { datum: E.datum, art: E.art, beginn: E.beginn, ende: E.ende, pause: E.pause, einsaetze: einsaetze, grund: gesperrt ? E.grund : '' }, quelle: E.quelle || 'Manuell', originaltext: E.originaltext || '' });
     if (E.quelle === 'Sprache') schreib(ENTWURF, null);
-    EDIT = null; NEUERF = false; RB.data = null; S = await call('init'); laden(false); zeichne(); window.scrollTo(0, 0);
-    toast('✓ ' + t('gespeichert') + (r.datum !== S.datum ? ' (' + dKurz(r.datum) + ')' : ''));
-  } catch (e) { fehler(e); }
+    EDIT = null; NEUERF = false; RB.data = null; cacheWeg('monat'); S = await call('init'); laden(false); zeichne(); window.scrollTo(0, 0);
+    hinweiseZeigen(r);
+  } catch (e) {
+    laden(false);
+    if (/^GRUND_FEHLT/.test(String(e.message))) { E.zwingendAntrag = true; zeichne(); toast(t('grundFehlt')); return; }
+    fehler(e);
+  }
 }
 
 /* ---------- Aufgaben (Mitarbeiter) ---------- */
@@ -580,7 +786,11 @@ function erledigtForm(a) {
       laden(true, t('senden') + ' …');
       try {
         const files = Array.from(inp.files || []);
-        for (let i = 0; i < files.length; i++) { laden(true, t('laedt') + ' ' + (i + 1) + ' / ' + files.length); await ladeHoch(files[i], { art: 'Foto', objekt: a.objekt || S.me.std.objekt, notiz: a.titel, aufgabeId: a.id, nr: i + 1 }); }
+        if (files.length) laden(true, t('vorbereiten'));
+        for (let i = 0; i < files.length; i++) await qNeu(files[i], { art: 'Foto', objekt: a.objekt || S.me.std.objekt, notiz: a.titel, aufgabeId: a.id, nr: i + 1 });
+        // Fotos sind in der Warteschlange: beim erneuten Tippen (z. B. nach Netzfehler) nicht noch einmal einreihen
+        inp.value = ''; anzahl.textContent = files.length ? ' ⬆ ' + files.length : '';
+        laden(true, t('senden') + ' …');
         await call('erledigt', { id: a.id, rueckmeldung: ta.value });
         S = await call('init'); laden(false); toast('✓ ' + t('danke')); zeichne();
       } catch (e) { fehler(e); }
@@ -618,12 +828,13 @@ function vFotos(v) {
     if (UPL.objekt === SONST && UPL.art !== 'Beleg' && !UPL.notiz.trim()) { toast(t('sonstPflicht')); return; }
     const n = UPL.files.length;
     try {
+      // Fotos nur vorbereiten (verkleinern) und in die Warteschlange legen – das Hochladen läuft im Hintergrund weiter.
+      laden(true, t('vorbereiten'));
       for (let i = 0; i < n; i++) {
-        laden(true, t('laedt') + ' ' + (i + 1) + ' / ' + n);
-        await ladeHoch(UPL.files[0], { art: UPL.art, objekt: UPL.objekt, kundenadresse: UPL.adresse, notiz: UPL.notiz, nr: i + 1 });
+        await qNeu(UPL.files[0], { art: UPL.art, objekt: UPL.objekt, kundenadresse: UPL.adresse, notiz: UPL.notiz, nr: i + 1 });
         URL.revokeObjectURL(UPL.files[0].url); UPL.files.shift();
       }
-      laden(false); UPL.notiz = ''; RB.data = null; FOT.gruppen = null; FOT.liste = null; toast('✓ ' + t('hochgeladen') + ': ' + n); zeichne();
+      laden(false); UPL.notiz = ''; toast('⬆ ' + t('imHintergrund')); zeichne();
     } catch (e) { fehler(e); zeigeThumbs(); knopf(); }
   });
   const sonst = UPL.objekt === SONST && UPL.art !== 'Beleg';
@@ -635,6 +846,7 @@ function vFotos(v) {
     UPL.objekt === KUNDE ? [h('label', {}, t('adressePflicht')), h('input', { id: 'uplAdresse', value: UPL.adresse, placeholder: 'Hauptstraße 12, Ettlingen', oninput: ev => UPL.adresse = ev.target.value })] : null,
     h('label', {}, sonst ? t('notizSonst') : (UPL.objekt === KUNDE ? t('notizKunde') : t('notiz'))), h('input', { id: 'uplNotiz', value: UPL.notiz, oninput: ev => UPL.notiz = ev.target.value }),
     h('button', { class: 'btn sec', style: 'margin-top:14px', onclick: () => inp.click() }, '📷 ' + t('fotoWaehlen')), inp, thumbs, hoch));
+  v.append(qKarte());
   zeigeThumbs(); knopf();
 }
 
@@ -658,7 +870,11 @@ async function holeVorschau() {
   holeVorschau.laeuft = true;
   try {
     while (WARTE.length) {
-      const ids = WARTE.splice(0, 12).filter(id => THUMB[id] === undefined);
+      let ids = WARTE.splice(0, 12).filter(id => THUMB[id] === undefined);
+      if (!ids.length) continue;
+      const lokal = await Promise.all(ids.map(id => DB.get('img', id)));
+      ids.forEach((id, i) => { if (lokal[i]) { THUMB[id] = lokal[i]; document.querySelectorAll('.ph[data-fid="' + id + '"]').forEach(b => fuelleKachel(b, id)); } });
+      ids = ids.filter((id, i) => !lokal[i]);
       if (!ids.length) continue;
       let r;
       try { r = await call('vorschau', { ids }); } catch (e) { WARTE.length = 0; break; }   // Netzfehler: beim nächsten Anzeigen erneut
@@ -666,6 +882,7 @@ async function holeVorschau() {
       ids.forEach(id => {
         if (r[id] === undefined) { offen.push(id); return; }   // vom Server noch nicht nachgeholt
         THUMB[id] = r[id] || '';
+        if (r[id]) DB.put('img', r[id], id);
         document.querySelectorAll('.ph[data-fid="' + id + '"]').forEach(b => fuelleKachel(b, id));
       });
       if (offen.length && offen.length < ids.length) WARTE.unshift(...offen);
@@ -685,10 +902,13 @@ function zeigeBild(f) {
 /* ---------- Fotos je Baustelle ---------- */
 async function ladeGalerie(objekt, ab) {
   FOT.laedt = true; FOT.fehler = '';
+  // Sofort den letzten Stand vom Gerät zeigen, dann auffrischen.
+  if (!ab) { const c = cacheLies('fotos_' + (objekt || '')); if (c) { if (!objekt) FOT.gruppen = c; else if (FOT.objekt === objekt) FOT.liste = c; if (!beschaeftigt()) zeichne(); } }
   try {
-    if (!objekt) FOT.gruppen = (await call('fotos', {})).gruppen;
+    if (!objekt) { FOT.gruppen = (await call('fotos', {})).gruppen; cacheSchreib('fotos_', FOT.gruppen); }
     else {
       const r = await call('fotos', { objekt, ab: ab || 0 });
+      if (!ab) cacheSchreib('fotos_' + objekt, r);
       if (FOT.objekt === objekt) {
         if (ab && FOT.liste) {
           // Fotos, die zwischen zwei Seiten hochgeladen wurden, nicht doppelt zeigen
@@ -697,7 +917,7 @@ async function ladeGalerie(objekt, ab) {
         } else FOT.liste = r;
       }
     }
-  } catch (e) { FOT.fehler = String(e.message || e); }
+  } catch (e) { if (!(objekt ? FOT.liste : FOT.gruppen)) FOT.fehler = fehlerText(e); }
   FOT.laedt = false;
   if (((TAB === 'fotos' && FOT.modus === 'ansehen') || TAB === 'dateien') && !beschaeftigt()) zeichne();
 }
@@ -705,17 +925,19 @@ function galerie(v) {
   const admin = S.me.rolle === 'Admin';
   if (FOT.fehler) { v.append(h('div', { class: 'card' }, h('div', { class: 'bad' }, t('fehler') + ': ' + FOT.fehler), h('button', { class: 'btn sec', onclick: () => { FOT.fehler = ''; zeichne(); } }, t('nochmalLaden')))); return; }
   if (!FOT.objekt) {
-    if (!FOT.gruppen) { if (!FOT.laedt) ladeGalerie(null); v.append(h('div', { class: 'card muted' }, t('wirdGeladen'))); return; }
+    if (!FOT.gruppen || (!FOT.laedt && !FOT.frisch)) { if (!FOT.laedt) { FOT.frisch = true; ladeGalerie(null); } }
+    if (!FOT.gruppen) { v.append(h('div', { class: 'card muted' }, t('wirdGeladen'))); return; }
     const mit = FOT.gruppen.filter(g => g.anzahl > 0), ohne = FOT.gruppen.filter(g => !g.anzahl);
     v.append(h('div', { class: 'card' }, h('h2', {}, t('baustellen')),
       mit.length ? mit.map(g => h('button', { class: 'site', onclick: () => { FOT.objekt = g.objekt; FOT.liste = null; zeichne(); window.scrollTo(0, 0); } },
         h('span', {}, h('b', {}, objLabel(g.objekt)), h('span', { class: 'small muted', style: 'display:block' }, dDe(g.letzte))), h('span', { class: 'n' }, g.anzahl)))
         : h('div', { class: 'muted' }, t('keineFotos')),
       ohne.length && mit.length ? h('div', { class: 'xs muted', style: 'margin-top:10px' }, t('keineFotos').replace(/\.$/, '') + ': ' + ohne.map(g => objLabel(g.objekt, true)).join(', ')) : null,
-      h('button', { class: 'btn link', onclick: () => { FOT.gruppen = null; zeichne(); } }, '↻ ' + t('nochmalLaden'))));
+      h('button', { class: 'btn link', onclick: () => { FOT.gruppen = null; FOT.frisch = false; zeichne(); } }, '↻ ' + t('nochmalLaden'))));
     return;
   }
-  if (!FOT.liste) { if (!FOT.laedt) ladeGalerie(FOT.objekt); v.append(h('div', { class: 'card muted' }, t('wirdGeladen'))); return; }
+  if (!FOT.liste) { if (!FOT.laedt) ladeGalerie(FOT.objekt); }
+  if (!FOT.liste) { v.append(h('div', { class: 'card muted' }, t('wirdGeladen'))); return; }
   const card = h('div', { class: 'card' },
     h('button', { class: 'btn link', style: 'text-align:left;padding:0 0 8px', onclick: () => { FOT.objekt = null; FOT.liste = null; zeichne(); } }, '‹ ' + t('zurueck')),
     h('h2', {}, objLabel(FOT.objekt) + ' · ' + FOT.liste.gesamt));
@@ -729,61 +951,208 @@ function galerie(v) {
   v.append(card);
   if (admin && String(FOT.objekt) !== KUNDE && String(FOT.objekt) !== SONST) v.append(h('div', { class: 'xs muted', style: 'padding:0 6px 10px' }, 'Die Originale liegen im Import-Ordner des Objekts und werden nachts in die Fotodokumentation übernommen (U-07).'));
 }
-async function ladeHoch(file, meta) {
-  let data, mime;
-  // Originale (JPEG bis 8 MB, PDF) unverändert senden, damit Aufnahmezeit und – falls vom Handy mitgegeben – Ort im Foto bleiben (U-07)
-  if (file.type === 'application/pdf' || (file.type === 'image/jpeg' && file.size <= 8 * 1024 * 1024)) { data = await alsBase64(file); mime = file.type; }
-  else { const v = await verkleinern(file, 2560, 0.85); data = v.data; mime = v.mime; }
+/* ---------- Gerätespeicher (IndexedDB): Warteschlange der Uploads und Vorschaubilder ---------- */
+const DB = (() => {
+  let p = null;
+  const oeffnen = () => p || (p = new Promise(res => {
+    try {
+      const r = indexedDB.open('teamapp', 1);
+      r.onupgradeneeded = () => { const d = r.result; if (!d.objectStoreNames.contains('upl')) d.createObjectStore('upl', { keyPath: 'uid' }); if (!d.objectStoreNames.contains('img')) d.createObjectStore('img'); };
+      r.onsuccess = () => res(r.result); r.onerror = () => res(null); r.onblocked = () => res(null);
+      setTimeout(() => res(null), 3000);
+    } catch (e) { res(null); }
+  }));
+  const tx = async (store, mode, fn) => {
+    const d = await oeffnen(); if (!d) return null;
+    return new Promise(res => {
+      try { const x = d.transaction(store, mode); const r = fn(x.objectStore(store)); x.oncomplete = () => res(r && r.result !== undefined ? r.result : true); x.onerror = x.onabort = () => res(null); }
+      catch (e) { res(null); }
+    });
+  };
+  return {
+    put: (store, v, k) => tx(store, 'readwrite', s => k === undefined ? s.put(v) : s.put(v, k)),
+    get: (store, k) => tx(store, 'readonly', s => s.get(k)),
+    del: (store, k) => tx(store, 'readwrite', s => s.delete(k)),
+    alle: store => tx(store, 'readonly', s => s.getAll())
+  };
+})();
+
+/* ---------- Fotos vorbereiten: verkleinern (schnell hochladen), Aufnahmedaten (EXIF) behalten ---------- */
+const bytesB64 = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
+const dateiBytes = (file, n) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsArrayBuffer(n ? file.slice(0, n) : file); });
+// EXIF-Block (APP1) aus einem JPEG holen; Ausrichtung auf 1 setzen, weil das verkleinerte Bild schon richtig gedreht ist.
+function exifAus(buf) {
+  try {
+    const d = new DataView(buf); if (d.getUint16(0) !== 0xFFD8) return null;
+    let o = 2;
+    while (o + 4 < d.byteLength) {
+      const m = d.getUint16(o); if ((m & 0xFF00) !== 0xFF00 || m === 0xFFDA) return null;
+      const len = d.getUint16(o + 2);
+      if (m === 0xFFE1 && d.getUint32(o + 4) === 0x45786966) {
+        const seg = new Uint8Array(buf.slice(o, o + 2 + len));
+        const v = new DataView(seg.buffer), T = 10, le = v.getUint16(T) === 0x4949;
+        const lies = (ifd, cb) => { const n = v.getUint16(T + ifd, le); for (let i = 0; i < n; i++) cb(T + ifd + 2 + i * 12, v.getUint16(T + ifd + 2 + i * 12, le)); };
+        let datum = '', sub = 0;
+        lies(v.getUint32(T + 4, le), (e, tag) => { if (tag === 0x0112) v.setUint16(e + 8, 1, le); if (tag === 0x8769) sub = v.getUint32(e + 8, le); });
+        if (sub) lies(sub, (e, tag) => { if (tag === 0x9003) { const off = v.getUint32(e + 8, le); datum = String.fromCharCode.apply(null, seg.subarray(T + off, T + off + 16)); } });
+        const m2 = /^(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2})/.exec(datum);
+        return { seg: seg, aufgenommen: m2 ? m2[1] + '-' + m2[2] + '-' + m2[3] + ' ' + m2[4] + ':' + m2[5] : '' };
+      }
+      o += 2 + len;
+    }
+  } catch (e) { }
+  return null;
+}
+function exifEinsetzen(jpg, seg) {
+  let pos = 2;
+  if (jpg[2] === 0xFF && jpg[3] === 0xE0) pos = 4 + ((jpg[4] << 8) | jpg[5]);
+  const out = new Uint8Array(jpg.length + seg.length);
+  out.set(jpg.subarray(0, pos), 0); out.set(seg, pos); out.set(jpg.subarray(pos), pos + seg.length);
+  return out;
+}
+const bildLaden = file => new Promise(res => { const url = URL.createObjectURL(file); const img = new Image(); img.onload = () => res({ img, url }); img.onerror = () => { URL.revokeObjectURL(url); res(null); }; img.src = url; });
+const leinwand = (img, max, q) => new Promise(res => {
+  const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+  const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(img.naturalWidth * s)); c.height = Math.max(1, Math.round(img.naturalHeight * s));
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  if (c.toBlob) c.toBlob(b => b ? b.arrayBuffer().then(a => res(new Uint8Array(a)), () => res(null)) : res(null), 'image/jpeg', q);
+  else res(Uint8Array.from(atob(c.toDataURL('image/jpeg', q).split(',')[1]), ch => ch.charCodeAt(0)));
+});
+async function bildVorbereiten(file) {
   const z = new Date(file.lastModified || Date.now()), p = n => String(n).padStart(2, '0');
-  const aufgenommen = z.getFullYear() + '-' + p(z.getMonth() + 1) + '-' + p(z.getDate()) + ' ' + p(z.getHours()) + ':' + p(z.getMinutes());
-  const vorschau = file.type === 'application/pdf' ? '' : await vorschauBild(file);
-  return call('upload', Object.assign({ data, mime, aufgenommen, vorschau }, meta));
+  let aufgenommen = z.getFullYear() + '-' + p(z.getMonth() + 1) + '-' + p(z.getDate()) + ' ' + p(z.getHours()) + ':' + p(z.getMinutes());
+  if (file.type === 'application/pdf') return { data: bytesB64(new Uint8Array(await dateiBytes(file))), mime: 'application/pdf', aufgenommen, vorschau: '' };
+  const istJpg = /jpe?g/i.test(file.type) || /\.jpe?g$/i.test(file.name || '');
+  const exif = istJpg ? exifAus(await dateiBytes(file, 196608)) : null;
+  if (exif && exif.aufgenommen) aufgenommen = exif.aufgenommen;
+  const b = await bildLaden(file);
+  if (!b) {   // Format, das der Browser nicht anzeigen kann (z. B. HEIC auf Android): Original senden
+    return { data: bytesB64(new Uint8Array(await dateiBytes(file))), mime: file.type || (/\.heic$/i.test(file.name || '') ? 'image/heic' : 'image/jpeg'), aufgenommen, vorschau: '' };
+  }
+  let data = '', vorschau = '';
+  try {
+    const gross = Math.max(b.img.naturalWidth, b.img.naturalHeight);
+    if (istJpg && file.size <= 1200000 && gross <= 2048) data = bytesB64(new Uint8Array(await dateiBytes(file)));   // schon klein: Original
+    else {
+      let jpg = await leinwand(b.img, 2048, 0.82);
+      if (jpg && exif) jpg = exifEinsetzen(jpg, exif.seg);
+      data = jpg ? bytesB64(jpg) : bytesB64(new Uint8Array(await dateiBytes(file)));
+    }
+    for (const [max, q] of [[240, 0.55], [160, 0.5]]) { const v = await leinwand(b.img, max, q); vorschau = v ? bytesB64(v) : ''; if (vorschau.length <= 44000) break; }
+    if (vorschau.length > 44000) vorschau = '';
+  } finally { URL.revokeObjectURL(b.url); }
+  return { data, mime: 'image/jpeg', aufgenommen, vorschau };
 }
-// Kleines Vorschaubild (ca. 240 Pixel, meist 10–20 KB) für Rückblick und Baustellen-Ansicht; schlägt es fehl, wird ohne Vorschau hochgeladen.
-function vorschauBild(file) {
-  return new Promise(res => {
-    const url = URL.createObjectURL(file); const img = new Image();
-    img.onload = () => {
-      try {
-        let out = '';
-        for (const max of [240, 180, 140]) {
-          const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
-          const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(img.naturalWidth * s)); c.height = Math.max(1, Math.round(img.naturalHeight * s));
-          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-          out = c.toDataURL('image/jpeg', 0.55).split(',')[1] || '';
-          if (out.length <= 44000) break;
-        }
-        URL.revokeObjectURL(url); res(out.length <= 44000 ? out : '');
-      } catch (e) { URL.revokeObjectURL(url); res(''); }
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); res(''); };
-    img.src = url;
-  });
+
+/* ---------- Warteschlange: Fotos laden im Hintergrund hoch, auch nach schlechtem Netz oder Neustart der App ---------- */
+const Q = { liste: [], laeuft: false, aktiv: null, prozent: 0, warter: {}, timer: null };
+const qId = () => 'u-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+async function qLaden() {
+  const a = await DB.alle('upl');
+  if (a) a.filter(x => x.k === TOKEN.slice(-10) && !Q.liste.some(y => y.uid === x.uid)).forEach(x => Q.liste.push(x));
+  Q.liste.sort((x, y) => x.zeit - y.zeit); qStatus(); qStart();
 }
-function alsBase64(file) {
-  return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(file); });
+async function qNeu(file, meta) {
+  const v = await bildVorbereiten(file);
+  const it = { uid: qId(), k: TOKEN.slice(-10), zeit: Date.now(), meta: meta, data: v.data, mime: v.mime, aufgenommen: v.aufgenommen, vorschau: v.vorschau, versuche: 0, fehler: '' };
+  Q.liste.push(it); await DB.put('upl', it); qStatus(); qStart();
+  return it;
 }
-function verkleinern(file, max, q) {
+function qWarten(uid) {
+  return new Promise((ok, nein) => { (Q.warter[uid] = Q.warter[uid] || []).push({ ok, nein }); });
+}
+function qSenden(it, fortschritt) {
+  const daten = Object.assign({}, it.meta, { data: it.data, mime: it.mime, aufgenommen: it.aufgenommen, vorschau: it.vorschau, uploadId: it.uid });
+  if (!API_URL) return senden('upload', daten).then(r => { if (!r || !r.ok) { const e = new Error(r ? r.error : 'Fehler'); e.endgueltig = true; throw e; } return r.data; });
   return new Promise((res, rej) => {
-    const url = URL.createObjectURL(file); const img = new Image();
-    img.onload = () => {
-      const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
-      const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
-      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
-      res({ data: c.toDataURL('image/jpeg', q).split(',')[1], mime: 'image/jpeg' });
+    const x = new XMLHttpRequest();
+    x.open('POST', API_URL); x.setRequestHeader('Content-Type', 'text/plain;charset=utf-8'); x.timeout = 180000;
+    if (x.upload) x.upload.onprogress = ev => { if (ev.lengthComputable) fortschritt(ev.loaded / ev.total); };
+    const netz = () => rej(new Error(t('netz')));
+    x.onload = () => {
+      let r; try { r = JSON.parse(x.responseText); } catch (e) { return netz(); }
+      if (r.ok) return res(r.data);
+      const e = new Error(r.error || 'Fehler'); e.endgueltig = !/lock|zeitüberschreitung|timeout|service|überlastet|try again/i.test(r.error || ''); rej(e);
     };
-    // Kann der Browser das Bild nicht lesen (z. B. HEIC auf Android): Original mit seinem eigenen Dateityp senden.
-    img.onerror = () => { URL.revokeObjectURL(url); alsBase64(file).then(d => res({ data: d, mime: file.type || (/\.heic$/i.test(file.name) ? 'image/heic' : 'image/jpeg') }), rej); };
-    img.src = url;
+    x.onerror = x.ontimeout = netz;
+    x.send(JSON.stringify({ token: TOKEN, aktion: 'upload', daten: daten }));
   });
 }
+async function qStart() {
+  if (Q.laeuft) return;
+  Q.laeuft = true; clearTimeout(Q.timer);
+  try {
+    for (;;) {
+      const it = Q.liste.find(x => !x.fehler && (!x.naechster || x.naechster <= Date.now()));
+      if (!it) break;
+      Q.aktiv = it.uid; Q.prozent = 0; qStatus();
+      try {
+        const r = await qSenden(it, p => { Q.prozent = p; qStatus(); });
+        Q.liste = Q.liste.filter(x => x !== it); DB.del('upl', it.uid);
+        if (it.vorschau && r && r.id) { THUMB[r.id] = it.vorschau; DB.put('img', it.vorschau, r.id); }
+        if (r && r.id && /^Kundenauftrag: /.test(r.objekt || '') && S) (S.kundenFotos = S.kundenFotos || []).push({ id: r.id, adresse: r.objekt.slice(15), datum: r.datum, zeit: S.datum });
+        FOT.gruppen = null; if (FOT.liste) FOT.liste = null; cacheWeg('fotos'); cacheWeg('monat');
+        (Q.warter[it.uid] || []).forEach(w => w.ok(r)); delete Q.warter[it.uid];
+      } catch (e) {
+        if (e.endgueltig) { it.fehler = fehlerText(e); DB.put('upl', it); (Q.warter[it.uid] || []).forEach(w => w.nein(e)); delete Q.warter[it.uid]; }
+        else { it.versuche = (it.versuche || 0) + 1; it.naechster = Date.now() + Math.min(60000, 2500 * Math.pow(2, it.versuche)); DB.put('upl', it); }
+      }
+      Q.aktiv = null;
+    }
+  } finally {
+    Q.laeuft = false; qStatus();
+    const warte = Q.liste.filter(x => !x.fehler).map(x => x.naechster || 0);
+    if (warte.length) Q.timer = setTimeout(qStart, Math.max(1000, Math.min.apply(null, warte) - Date.now()));
+  }
+}
+window.addEventListener('online', () => { Q.liste.forEach(x => x.naechster = 0); qStart(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { Q.liste.forEach(x => x.naechster = 0); qStart(); } });
+function qStatus() {
+  const bar = document.getElementById('qbar'); if (!bar || !S) return;
+  const offen = Q.liste.filter(x => !x.fehler), kaputt = Q.liste.filter(x => x.fehler);
+  if (!offen.length && !kaputt.length) { bar.classList.add('hide'); return; }
+  bar.classList.remove('hide'); bar.classList.toggle('fehler', !offen.length && kaputt.length > 0);
+  bar.onclick = () => { if (S.me.rolle === 'Admin') return; TAB = 'fotos'; FOT.modus = 'hoch'; EDIT = null; zeichne(); window.scrollTo(0, 0); };
+  if (offen.length) {
+    const wartet = !Q.aktiv && offen.every(x => x.naechster && x.naechster > Date.now());
+    bar.replaceChildren(h('span', {}, '⬆ ' + (wartet ? t('qWarte') : t('qLaeuft')) + ' · ' + offen.length),
+      h('span', { class: 'bar2' }, h('i', { style: 'width:' + Math.round((Q.aktiv ? Q.prozent : 0) * 100) + '%' })),
+      kaputt.length ? h('span', {}, '⚠ ' + kaputt.length) : null);
+  } else bar.replaceChildren(h('span', {}, '⚠ ' + kaputt.length + ' ' + t('qFehler')));
+}
+function qKarte() {
+  if (!Q.liste.length) return null;
+  return h('div', { class: 'card' }, h('h2', {}, t('qListe') + ' (' + Q.liste.length + ')'),
+    Q.liste.map(it => h('div', { class: 'qitem' },
+      it.vorschau ? h('img', { src: 'data:image/jpeg;base64,' + it.vorschau, alt: '' }) : h('span', { style: 'width:48px;text-align:center' }, '📄'),
+      h('div', { class: 'x' }, h('div', {}, objLabel(it.meta.objekt === KUNDE ? KUNDE : it.meta.objekt, true) + (it.meta.kundenadresse ? ' · ' + it.meta.kundenadresse : '')),
+        h('div', { class: 'xs', style: it.fehler ? 'color:var(--bad)' : 'color:var(--muted)' }, it.fehler ? '⚠ ' + it.fehler : (Q.aktiv === it.uid ? Math.round(Q.prozent * 100) + ' %' : t('qOffen')))),
+      it.fehler ? h('button', { class: 'chip', onclick: () => { it.fehler = ''; it.versuche = 0; it.naechster = 0; DB.put('upl', it); qStart(); zeichne(); } }, t('erneut')) : null,
+      it.fehler || Q.aktiv !== it.uid ? h('button', { class: 'chip', 'aria-label': t('entfernen'), onclick: () => { Q.liste = Q.liste.filter(x => x !== it); DB.del('upl', it.uid); (Q.warter[it.uid] || []).forEach(w => w.nein(new Error(t('entfernen')))); delete Q.warter[it.uid]; qStatus(); zeichne(); } }, '×') : null)));
+}
+
+/* ---------- Zwischenspeicher: Ansichten sofort aus dem letzten Stand zeigen, im Hintergrund auffrischen ---------- */
+const cKey = k => 'teamapp_c_' + TOKEN.slice(-6) + '_' + k;
+function cacheLies(k) { try { const v = JSON.parse(lies(cKey(k)) || 'null'); return v && v.d; } catch (e) { return null; } }
+function cacheSchreib(k, d) {
+  try { const s = JSON.stringify({ z: Date.now(), d: d }); if (s.length < 300000) localStorage.setItem(cKey(k), s); }
+  catch (e) { try { Object.keys(localStorage).filter(x => x.indexOf('teamapp_c_') === 0).forEach(x => localStorage.removeItem(x)); } catch (e2) { } }
+}
+function cacheWeg(praefix) { try { Object.keys(localStorage).filter(x => x.indexOf(cKey(praefix)) === 0).forEach(x => localStorage.removeItem(x)); } catch (e) { } }
 
 /* ---------- Rückblick (Archiv je Monat) ---------- */
 // Wird aus dem Zeichnen heraus gestartet; nach dem Laden nur neu zeichnen, wenn der Rückblick noch offen ist und nichts bearbeitet wird.
 async function ladeMonat(monat, maId) {
   RB.laedt = true; RB.fehler = '';
-  try { const r = await call('monat', { monat: monat || '', mitarbeiterId: maId || '' }); if (RB.ma === (maId || null)) { RB.data = r; RB.monat = r.monat; } }
-  catch (e) { RB.fehler = String(e.message || e); }
+  const ck = 'monat_' + (maId || '') + '_' + (monat || 'aktuell');
+  const c = cacheLies(ck);
+  if (c && RB.ma === (maId || null) && !RB.data) { RB.data = c; RB.monat = c.monat; RB.alt = true; if ((TAB === 'woche' || (TAB === 'team' && ADM_RB)) && !beschaeftigt()) zeichne(); }
+  try {
+    const r = await call('monat', { monat: monat || '', mitarbeiterId: maId || '' });
+    cacheSchreib(ck, r);
+    if (RB.ma === (maId || null) && (!RB.monat || RB.monat === r.monat || !monat)) { RB.data = r; RB.monat = r.monat; RB.alt = false; }
+  }
+  catch (e) { if (!RB.data) RB.fehler = fehlerText(e); }
   RB.laedt = false;
   if ((TAB === 'woche' || (TAB === 'team' && ADM_RB)) && !beschaeftigt()) zeichne();
 }
@@ -809,18 +1178,21 @@ function rueckblick(v, maId) {
       h('div', {}, h('b', {}, Z.krank), h('span', {}, t('Krank'))), h('div', {}, h('b', {}, Z.feiertag), h('span', {}, t('Feiertag'))))));
   if (D.fehlend.length) v.append(h('div', { class: 'card' }, h('h2', {}, '⚠ ' + t('fehlend') + ' (' + D.fehlend.length + ')'),
     h('div', { class: 'chips' }, D.fehlend.map(d => eigen
-      ? h('button', { class: 'chip', onclick: () => { const std = S.me.std; EDIT = { datum: d, art: 'Arbeit', beginn: std.beginn, ende: std.ende, pause: std.pause, einsaetze: [{ objekt: std.objekt, stunden: null, taetigkeit: '', kundenadresse: '' }], quelle: 'Manuell' }; TAB = 'heute'; zeichne(); window.scrollTo(0, 0); } }, dKurz(d))
+      ? h('button', { class: 'chip', 'data-antrag': (S.antraege || []).some(a => a.datum === d && a.status === 'beantragt') ? '1' : null, onclick: () => { const std = S.me.std; EDIT = { datum: d, art: 'Arbeit', beginn: std.beginn, ende: std.ende, pause: std.pause, einsaetze: [{ objekt: std.objekt, stunden: null, taetigkeit: '', kundenadresse: '' }], quelle: 'Manuell' }; TAB = 'heute'; zeichne(); window.scrollTo(0, 0); } }, ((S.antraege || []).some(a => a.datum === d && a.status === 'beantragt') ? '📨 ' : '') + dKurz(d))
       : h('span', { class: 'chip' }, dKurz(d)))),
     eigen ? h('div', { class: 'xs muted', style: 'margin-top:8px' }, t('nachtragen') + ': ' + (L === 'ro' ? 'apasă pe zi.' : 'auf den Tag tippen.')) : null));
   const proTag = {};
   D.dateien.forEach(f => { (proTag[f.datum] = proTag[f.datum] || []).push(f); });
   const tage = {};
   D.tage.forEach(d => { tage[d.datum] = d; });
-  const alle = Object.keys(Object.assign({}, proTag, tage)).sort().reverse();
+  const antragTage = {};
+  if (eigen) (S.antraege || []).filter(a => a.datum.slice(0, 7) === D.monat).forEach(a => antragTage[a.datum] = true);
+  const alle = Object.keys(Object.assign({}, proTag, tage, antragTage)).sort().reverse();
   const liste = h('div', { class: 'card' }, h('h2', {}, eigen ? t('meineTage') : D.mitarbeiter.name));
   if (!alle.length) liste.append(h('div', { class: 'muted' }, t('keineTage')));
   alle.forEach(datum => {
     const d = tage[datum], fs = proTag[datum] || [];
+    const antrag = eigen ? (S.antraege || []).filter(a => a.datum === datum).pop() : null;
     const hinweise = d ? d.hinweise.filter(c => c !== 'ZUKUNFT') : [];
     liste.append(h('div', { class: 'day', style: 'display:block' },
       h('div', { class: 'dayh' }, h('b', {}, dKurz(datum)),
@@ -832,7 +1204,10 @@ function rueckblick(v, maId) {
       hinweise.length ? h('div', { class: 'xs', style: 'color:var(--warn)' }, '⚠ ' + hinweise.map(c => eigen ? t('H_' + c) : HDE(c)).join(' ')) : null,
       d && d.originaltext ? h('details', {}, h('summary', {}, t('deinText')), h('div', { class: 'small', style: 'white-space:pre-wrap' }, d.originaltext)) : null,
       fs.length ? h('div', { class: 'gal' }, fs.map(f => fotoKachel(f, false))) : null,
-      d && eigen ? h('button', { class: 'btn link', style: 'padding:4px 0;font-size:14px;text-align:left', onclick: () => { EDIT = Object.assign({}, d, { quelle: 'Manuell' }); TAB = 'heute'; zeichne(); window.scrollTo(0, 0); } }, t('aendern')) : null));
+      antrag ? h('div', { class: antrag.status === 'beantragt' ? 'info' : 'bad', style: 'margin:6px 0' }, (antrag.status === 'beantragt' ? '📨 ' + t('beantragt') : '✕ ' + t('abgelehnt')) +
+        (antrag.art === 'Arbeit' ? ' · ' + antrag.beginn + '–' + antrag.ende + ' (' + zahl(antrag.arbeitszeit) + ' ' + t('std') + ')' : ' · ' + t(antrag.art))) : null,
+      d && eigen ? h('button', { class: 'btn link', style: 'padding:4px 0;font-size:14px;text-align:left', onclick: () => { EDIT = Object.assign({}, d, { quelle: 'Manuell' }); TAB = 'heute'; zeichne(); window.scrollTo(0, 0); } },
+        istGesperrt(datum) ? '🔒 ' + t('beantragen') : t('aendern')) : null));
   });
   v.append(liste);
 }
@@ -840,14 +1215,59 @@ function rueckblick(v, maId) {
 /* ======================== Verwaltung (Kevin) ======================== */
 const HDE = c => (A.hinweisTexte && A.hinweisTexte[c]) || c;
 const prioTxt = p => ({ 1: 'Wichtig', 2: 'Normal', 3: 'Wenn Zeit ist' })[p] || 'Normal';
-async function neuLaden(msg) { laden(true, 'Aktualisiere …'); try { A = await call('admin'); S = await call('init'); RB.data = null; laden(false); if (msg) toast(msg); zeichne(); } catch (e) { fehler(e); } }
+async function neuLaden(msg) { laden(true, 'Aktualisiere …'); try { A = await call('admin'); S = await call('init'); RB.data = null; cacheWeg('monat'); laden(false); if (msg) toast(msg); zeichne(); } catch (e) { fehler(e); } }
 
+/* ---------- Kevin: geänderte Einträge und Änderungsanträge ---------- */
+function pruefAnzahl() { const P = A && A.pruefen; return P ? P.antraege.length + P.aenderungen.length : 0; }
+function pruefHinweis() {
+  const n = pruefAnzahl(); if (!n) return;
+  const sig = A.pruefen.antraege.map(a => a.tagId).concat(A.pruefen.aenderungen.map(a => a.tagId)).join(',');
+  try { if (sessionStorage.getItem('teamapp_pruef') === sig) return; sessionStorage.setItem('teamapp_pruef', sig); } catch (e) { }
+  const m = document.getElementById('modal');
+  m.replaceChildren(h('div', { class: 'card' }, h('h2', {}, '⚠ Zu prüfen: ' + n),
+    A.pruefen.antraege.length ? h('div', {}, '📨 ' + (A.pruefen.antraege.length === 1 ? '1 Änderungsantrag' : A.pruefen.antraege.length + ' Änderungsanträge') + ' – zählt erst nach deiner Entscheidung') : null,
+    A.pruefen.aenderungen.length ? h('div', {}, '✎ ' + (A.pruefen.aenderungen.length === 1 ? '1 Eintrag wurde' : A.pruefen.aenderungen.length + ' Einträge wurden') + ' nach der ersten Erfassung geändert') : null,
+    h('button', { class: 'btn pri', id: 'btnPruefen', style: 'margin-top:12px', onclick: () => { m.classList.remove('on'); TAB = 'team'; ADM_RB = null; EDIT = null; zeichne(); const k = document.getElementById('pruefKarte'); if (k) k.scrollIntoView(); } }, 'Jetzt ansehen'),
+    h('button', { class: 'btn link', onclick: () => m.classList.remove('on') }, 'Später')));
+  m.classList.add('on');
+}
+function tagText(d) {
+  if (!d) return [h('div', { class: 'muted' }, '– kein Eintrag –')];
+  return [h('div', {}, d.art === 'Arbeit' ? d.beginn + '–' + d.ende + ', ' + d.pause + ' Min. Pause' : d.art),
+    d.art === 'Arbeit' ? h('div', {}, h('b', { style: 'display:inline;font-size:inherit;color:inherit' }, zahl(d.arbeitszeit) + ' Std.')) : null,
+    (d.einsaetze || []).map(e => h('div', {}, objLabel(e.objekt, true) + (e.kundenadresse ? ' (' + e.kundenadresse + ')' : '') + ': ' + zahl(e.stunden))),
+    d.erfasstAm ? h('div', { class: 'xs muted' }, 'erfasst ' + dDe(d.erfasstAm) + (d.quelle ? ' · ' + d.quelle : '')) : null];
+}
+function pruefKarte() {
+  const P = A.pruefen; if (!pruefAnzahl()) return null;
+  const card = h('div', { class: 'card', id: 'pruefKarte', style: 'border:2px solid var(--warn)' }, h('h2', {}, '⚠ Zu prüfen (' + pruefAnzahl() + ')'));
+  const entscheiden = async (id, was) => { laden(true, '…'); try { await call('antrag', { tagId: id, entscheidung: was }); await neuLaden(was === 'ok' ? 'Übernommen' : 'Abgelehnt'); } catch (e) { fehler(e); } };
+  P.antraege.forEach(a => {
+    const nein = h('button', { class: 'btn sec', style: 'min-height:44px;padding:10px', onclick: () => {
+      if (nein.dataset.sicher) entscheiden(a.tagId, 'nein'); else { nein.dataset.sicher = '1'; nein.textContent = 'Wirklich ablehnen?'; } } }, 'Ablehnen');
+    card.append(h('div', { class: 'einsatz' },
+      h('b', {}, '📨 Antrag · ' + a.name + ' · ' + dKurz(a.datum)),
+      h('div', { class: 'small' }, 'Grund: ' + (a.grund || '–')),
+      h('div', { class: 'vgl' }, h('div', {}, h('b', {}, 'Bisher gültig'), tagText(a.bisher)), h('div', { class: 'neu' }, h('b', {}, 'Beantragt'), tagText(a.neu))),
+      hinweisBoxDe(a.neu && a.neu.hinweise),
+      h('div', { class: 'row' }, h('button', { class: 'btn ok', style: 'min-height:44px;padding:10px', onclick: () => entscheiden(a.tagId, 'ok') }, 'Übernehmen'), nein)));
+  });
+  P.aenderungen.forEach(a => card.append(h('div', { class: 'einsatz' },
+    h('b', {}, '✎ Geändert · ' + a.name + ' · ' + dKurz(a.datum)),
+    h('div', { class: 'vgl' }, h('div', {}, h('b', {}, 'Zuerst erfasst'), tagText(a.bisher)), h('div', { class: 'neu' }, h('b', {}, 'Jetzt'), tagText(a.neu))),
+    hinweisBoxDe(a.neu && a.neu.hinweise),
+    h('button', { class: 'btn sec', style: 'min-height:44px;padding:10px', onclick: async () => { laden(true, '…'); try { await call('gesehen', { tagId: a.tagId }); await neuLaden(); } catch (e) { fehler(e); } } }, '✓ Gesehen'))));
+  if (P.aenderungen.length > 1) card.append(h('button', { class: 'btn link', onclick: async () => { laden(true, '…'); try { await call('gesehen', { alle: true }); await neuLaden(); } catch (e) { fehler(e); } } }, 'Alle Änderungen als gesehen markieren'));
+  return card;
+}
+const hinweisBoxDe = codes => (codes || []).filter(c => c && c !== 'ZUKUNFT').length ? h('div', { class: 'warn' }, codes.filter(c => c !== 'ZUKUNFT').map(c => h('div', {}, '⚠ ' + HDE(c)))) : null;
 function aTeam(v) {
   if (ADM_RB) {
     v.append(h('button', { class: 'btn link', style: 'text-align:left;padding:0 0 10px', onclick: () => { ADM_RB = null; zeichne(); } }, '‹ Zurück zum Team'));
     return rueckblick(v, ADM_RB);
   }
   const inst = installKarte();
+  v.append(pruefKarte());
   A.mitarbeiter.filter(m => m.rolle !== 'Admin').forEach(m => {
     const linkFeld = h('input', { value: m.link || '(Link fehlt – linksErzeugen ausführen)', readonly: true, onclick: ev => ev.target.select() });
     v.append(h('div', { class: 'card' },
