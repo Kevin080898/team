@@ -128,7 +128,26 @@ const TOKEN = API_URL ? linkSchluessel() : '';
 function linkSchluessel() {
   let k = new URLSearchParams(location.hash.replace(/^#/, '')).get('k') || new URLSearchParams(location.search).get('k') || '';
   try { if (k) localStorage.setItem('teamapp_k', k); else k = localStorage.getItem('teamapp_k') || ''; } catch (e) { }
+  // Schlüssel zusätzlich als ?k= in die Adresse schreiben: „Zum Home-Bildschirm“ übernimmt die Adresse sicher mit,
+  // auch wenn ein Gerät den Teil nach # verwirft. Die Seite gibt keine Adressen an Dritte weiter (no-referrer).
+  try { if (k && new URLSearchParams(location.search).get('k') !== k) history.replaceState(null, '', location.pathname + '?k=' + encodeURIComponent(k) + '#k=' + encodeURIComponent(k)); } catch (e) { }
   return k;
+}
+// Link nachträglich einfügen (z. B. in der Startbildschirm-App, die keine Adresszeile hat)
+function linkEinfuegen() {
+  const inp = h('input', { id: 'linkFeld', placeholder: 'https://kevin080898.github.io/team/#k=…', autocomplete: 'off', autocapitalize: 'off' });
+  const ok = () => {
+    const v = String(inp.value || '').trim();
+    const m = v.match(/[?#&]k=([0-9a-fA-F-]{20,})/) || v.match(/^([0-9a-fA-F-]{20,})$/);
+    if (!m) { toast('Link nicht erkannt / Linkul nu a fost recunoscut'); return; }
+    try { localStorage.setItem('teamapp_k', m[1]); localStorage.removeItem('teamapp_stand'); } catch (e) { }
+    location.replace(location.pathname + '?k=' + encodeURIComponent(m[1]) + '#k=' + encodeURIComponent(m[1]));
+    setTimeout(() => location.reload(), 50);
+  };
+  return h('div', { class: 'card' },
+    h('h2', {}, 'Persönlichen Link einfügen / Lipește linkul personal'),
+    h('div', { class: 'small' }, 'Kopiere deinen persönlichen Link aus der Nachricht von Kevin, füge ihn hier ein und tippe auf „Öffnen“. Danach merkt sich die App den Link. / Copiază linkul tău personal din mesajul de la Kevin, lipește-l aici și apasă „Deschide”. Aplicația îl reține după aceea.'),
+    inp, h('button', { class: 'btn pri', id: 'btnLink', style: 'margin-top:10px', onclick: ok }, 'Öffnen / Deschide'));
 }
 function senden(aktion, daten) {
   if (API_URL) return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, credentials: 'omit', redirect: 'follow',
@@ -319,7 +338,7 @@ async function start() {
     document.getElementById('view').replaceChildren(h('div', { class: 'bad' }, m === 'Link ungültig'
       ? (TOKEN ? 'Dieser Link ist ungültig oder nicht mehr aktiv. / Linkul nu este valid. Te rog cere un link nou de la Kevin Schreiber.'
         : I.de.linkFehlt + ' / ' + I.ro.linkFehlt)
-      : m + ' – Bitte Seite neu laden. / Te rog reîncarcă pagina.'));
+      : m + ' – Bitte Seite neu laden. / Te rog reîncarcă pagina.'), m === 'Link ungültig' ? linkEinfuegen() : null);
   }
 }
 function zeichne() {
