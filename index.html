@@ -239,7 +239,7 @@ const I = {
     qLaeuft: 'Fotos werden hochgeladen', qOffen: 'offen', qFehler: 'Foto(s) nicht hochgeladen – antippen', qWarte: 'Warte auf Verbindung …', erneut: 'Erneut versuchen', qListe: 'Warteschlange',
     summeOffen: 'Noch zu verteilen', summeZuViel: 'Zu viel verteilt', summeOk: 'Stunden je Objekt passen genau.', summeRegel: 'Die Stunden je Objekt müssen zusammen genau die Arbeitszeit ergeben.', restAuf: 'Rest hier eintragen',
     kundeFotos: 'Fotos vom Kundenauftrag (Pflicht)', kundeFotoKnopf: 'Foto aufnehmen oder aus der Mediathek', kundeErstAdresse: 'Bitte zuerst die Adresse eintragen.',
-    kundeVorhanden: 'bereits hochgeladen', ohneFoto: 'Ich konnte kein Foto machen – ich bestätige das.', ohneFotoText: 'Was genau wurde beim Kunden gemacht? (Pflicht, mind. 15 Zeichen)',
+    kundeVorhanden: 'bereits hochgeladen', fotoAdresse: 'Die Adresse wurde nach dem Foto geändert – das Foto gehört zur alten Adresse. Bitte Adresse zurücksetzen oder ein neues Foto machen.', ohneFoto: 'Ich konnte kein Foto machen – ich bestätige das.', ohneFotoText: 'Was genau wurde beim Kunden gemacht? (Pflicht, mind. 15 Zeichen)',
     fotoFehlt: 'Bitte ein Foto vom Kundenauftrag hinzufügen – oder bestätigen, dass es fehlt, und beschreiben, was gemacht wurde.', fotoWartet: 'Fotos werden noch hochgeladen …', fotoNichtFertig: 'Das Foto ist noch nicht hochgeladen. Bitte Verbindung prüfen und nochmal speichern.',
     gesperrt: 'Dieser Tag kann nicht mehr direkt geändert werden (24 Stunden nach der ersten Erfassung). Deine Änderung geht als Antrag an Kevin – bis er sie übernimmt, gilt der bisherige Eintrag.',
     gesperrtNeu: 'Dieser Tag liegt zu weit zurück, um ihn direkt nachzutragen. Dein Eintrag geht als Antrag an Kevin – er zählt, sobald Kevin ihn übernimmt.',
@@ -291,7 +291,7 @@ const I = {
     qLaeuft: 'Se încarcă pozele', qOffen: 'în așteptare', qFehler: 'poză/poze neîncărcate – apasă aici', qWarte: 'Aștept conexiunea …', erneut: 'Încearcă din nou', qListe: 'În curs de încărcare',
     summeOffen: 'Mai sunt de împărțit', summeZuViel: 'Prea multe ore împărțite', summeOk: 'Orele pe imobile se potrivesc exact.', summeRegel: 'Orele pe imobile trebuie să dea împreună exact timpul de lucru.', restAuf: 'Pune restul aici',
     kundeFotos: 'Poze de la client (obligatoriu)', kundeFotoKnopf: 'Fă o poză sau alege din galerie', kundeErstAdresse: 'Te rog scrie mai întâi adresa.',
-    kundeVorhanden: 'deja încărcate', ohneFoto: 'Nu am putut face poză – confirm acest lucru.', ohneFotoText: 'Ce anume ai lucrat la client? (obligatoriu, min. 15 caractere)',
+    kundeVorhanden: 'deja încărcate', fotoAdresse: 'Adresa a fost schimbată după poză – poza aparține adresei vechi. Te rog pune adresa înapoi sau fă o poză nouă.', ohneFoto: 'Nu am putut face poză – confirm acest lucru.', ohneFotoText: 'Ce anume ai lucrat la client? (obligatoriu, min. 15 caractere)',
     fotoFehlt: 'Te rog adaugă o poză de la client – sau confirmă că lipsește și descrie ce ai lucrat.', fotoWartet: 'Pozele se încarcă încă …', fotoNichtFertig: 'Poza nu este încă încărcată. Te rog verifică conexiunea și salvează din nou.',
     gesperrt: 'Ziua aceasta nu mai poate fi modificată direct (24 de ore după prima înregistrare). Modificarea ta merge ca cerere la Kevin – până o acceptă, rămâne valabilă înregistrarea veche.',
     gesperrtNeu: 'Ziua aceasta este prea veche pentru a fi completată direct. Înregistrarea ta merge ca cerere la Kevin – contează după ce o acceptă.',
@@ -327,7 +327,7 @@ function h(tag, attrs, ...kids) {
     else if (k === 'value') e.value = v;
     else e.setAttribute(k, v === true ? '' : v);
   }
-  for (const c of kids.flat()) if (c !== null && c !== undefined && c !== false) e.append(c instanceof Node ? c : String(c));
+  for (const c of kids.flat(Infinity)) if (c !== null && c !== undefined && c !== false) e.append(c instanceof Node ? c : String(c));
   return e;
 }
 // Der Server liefert nach Änderungen den neuen Stand gleich mit; die folgende Abfrage von 'init'/'admin' nimmt ihn aus dem Vorrat.
@@ -389,6 +389,8 @@ async function start() {
       if (S.me.rolle !== 'Admin' || A) { gemerkt = true; zeichne(); }
     }
   } catch (e) { }
+  // Offene Uploads gleich beim Start aus dem Gerätespeicher holen – auch ohne Netz (sie gehen los, sobald es wieder da ist).
+  qLaden().catch(() => {});
   try {
     const frisch = await call('init');
     const admin = frisch.me.rolle === 'Admin' ? await call('admin') : null;
@@ -641,7 +643,7 @@ function editor(v) {
       E.art = a;
       zeichne(); } }, t(a)))));
   const live = h('div', { id: 'edLive' });
-  const az = () => Math.round(Math.max(0, (minuten(E.ende) - minuten(E.beginn) - (Number(E.pause) || 0)) / 60) * 100) / 100;
+  const az = () => (!E.beginn || !E.ende) ? 0 : Math.round(Math.max(0, (minuten(E.ende) - minuten(E.beginn) - (Number(E.pause) || 0)) / 60) * 100) / 100;
   const rechne = () => {
     if (E.einsaetze.length === 1) { E.einsaetze[0].stunden = az(); const f = document.getElementById('std0'); if (f && document.activeElement !== f) f.value = String(E.einsaetze[0].stunden).replace('.', L === 'ro' || L === 'de' ? ',' : '.'); }
     const summe = Math.round(E.einsaetze.reduce((s, e) => s + (Number(e.stunden) || 0), 0) * 100) / 100;
@@ -652,7 +654,7 @@ function editor(v) {
     if (A_ > 9 && E.pause < 45) codes.push('PAUSE45'); else if (A_ > 6 && E.pause < 30) codes.push('PAUSE30');
     if (new Date(E.datum + 'T12:00:00').getDay() === 0) codes.push('SONNTAG');
     live.replaceChildren(h('div', { class: 'sum' }, h('span', {}, t('arbeitszeit')), h('span', {}, zahl(A_) + ' ' + t('std'))),
-      E.einsaetze.length > 1 ? (Math.abs(diff) < 0.01
+      E.einsaetze.length > 1 ? (Math.round(diff * 100) === 0
         ? h('div', { class: 'xs', style: 'color:var(--ok);margin-top:4px' }, '✓ ' + t('summeOk'))
         : h('div', { class: 'bad', id: 'edSumme' }, '⚠ ' + (diff > 0 ? t('summeOffen') : t('summeZuViel')) + ': ' + zahl(Math.abs(diff)) + ' ' + t('std') + '. ' + t('summeRegel'))) : null,
       hinweisBox(codes.concat((E.hinweise || []).filter(c => ['SONNTAG', 'MAX10', 'PAUSE30', 'PAUSE45', 'SUMME', 'KUNDE_OHNE_ADRESSE'].indexOf(c) < 0))));
@@ -695,7 +697,8 @@ function editor(v) {
 }
 // Kundenauftrag: Foto ist Pflicht. Nur wenn das wirklich nicht ging: ausdrücklich bestätigen und beschreiben, was gemacht wurde.
 function vorhandeneKundenFotos(E, e) { return (S.kundenFotos || []).filter(f => adresseGleich(f.adresse, e.kundenadresse) && (f.datum === E.datum || f.zeit === E.datum)); }
-function kundeOk(E, e) { return e.fotos.length > 0 || (e.fotoIds || []).length > 0 || vorhandeneKundenFotos(E, e).length > 0 || (e.ohneFoto && String(e.ohneFotoGrund || '').trim().length >= 15); }
+function passendeFotos(e) { return e.fotos.filter(f => !f.adresse || adresseGleich(f.adresse, e.kundenadresse)); }
+function kundeOk(E, e) { return passendeFotos(e).length > 0 || (e.fotoIds || []).length > 0 || vorhandeneKundenFotos(E, e).length > 0 || (e.ohneFoto && String(e.ohneFotoGrund || '').trim().length >= 15); }
 function kundenFotoBox(E, e) {
   const vorh = vorhandeneKundenFotos(E, e);
   const box = h('div', { class: 'pflicht' + (kundeOk(E, e) ? ' ok' : '') });
@@ -706,7 +709,7 @@ function kundenFotoBox(E, e) {
     try {
       for (let i = 0; i < files.length; i++) {
         const it = await qNeu(files[i], { art: 'Foto', objekt: KUNDE, kundenadresse: e.kundenadresse.trim(), notiz: e.taetigkeit || '', nr: e.fotos.length + 1 });
-        const f = { uid: it.uid, vorschau: it.vorschau, id: '' }; e.fotos.push(f);
+        const f = { uid: it.uid, vorschau: it.vorschau, id: '', adresse: e.kundenadresse.trim() }; e.fotos.push(f);
         qWarten(it.uid).then(r => { f.id = r && r.id || ''; }, () => { f.fehler = true; });
       }
       e.ohneFoto = false;
@@ -719,7 +722,8 @@ function kundenFotoBox(E, e) {
     h('button', { class: 'btn sec', style: 'margin-top:8px;min-height:46px;padding:10px', onclick: () => {
       if (!String(e.kundenadresse || '').trim()) { toast(t('kundeErstAdresse')); return; } inp.click(); } }, '📷 ' + t('kundeFotoKnopf')), inp);
   if ((e.fotoIds || []).length) box.insertBefore(h('div', { class: 'xs', style: 'color:var(--ok)' }, '✓ ' + e.fotoIds.length + ' ' + t('kundeVorhanden')), box.children[1] || null);
-  if (!e.fotos.length && !vorh.length && !(e.fotoIds || []).length) {
+  if (e.fotos.length > passendeFotos(e).length) box.append(h('div', { class: 'xs', style: 'color:var(--bad)' }, '⚠ ' + t('fotoAdresse')));
+  if (!passendeFotos(e).length && !vorh.length && !(e.fotoIds || []).length) {
     box.append(h('label', { class: 'chk' }, h('input', { type: 'checkbox', checked: !!e.ohneFoto, onchange: ev => { e.ohneFoto = ev.target.checked; zeichne(); } }), h('span', {}, t('ohneFoto'))));
     if (e.ohneFoto) box.append(h('label', {}, t('ohneFotoText')), h('textarea', { style: 'min-height:80px', value: e.ohneFotoGrund || '', oninput: ev => {
       e.ohneFotoGrund = ev.target.value; box.classList.toggle('ok', kundeOk(E, e)); } }));
@@ -731,10 +735,10 @@ async function speichern() {
   // Prüfen vor dem Senden – mit verständlicher Meldung statt eines Serverfehlers
   const az = Math.round(Math.max(0, (minuten(E.ende) - minuten(E.beginn) - (Number(E.pause) || 0)) / 60) * 100) / 100;
   if (E.art === 'Arbeit') {
-    if (minuten(E.ende) <= minuten(E.beginn) || az <= 0) { toast(t('E_ZEIT')); return; }
+    if (!E.beginn || !E.ende || minuten(E.ende) <= minuten(E.beginn) || az <= 0) { toast(t('E_ZEIT')); return; }
     if (E.einsaetze.length === 1) E.einsaetze[0].stunden = az;
     const summe = Math.round(E.einsaetze.reduce((s, e) => s + (Number(e.stunden) || 0), 0) * 100) / 100;
-    if (E.einsaetze.some(e => e.stunden === null) || Math.abs(summe - az) > 0.01) { toast('⚠ ' + t('summeRegel')); const x = document.getElementById('edSumme'); if (x) x.scrollIntoView({ block: 'center' }); return; }
+    if (E.einsaetze.some(e => e.stunden === null) || Math.round(summe * 100) !== Math.round(az * 100)) { toast('⚠ ' + t('summeRegel')); const x = document.getElementById('edSumme'); if (x) x.scrollIntoView({ block: 'center' }); return; }
     if (E.einsaetze.some(e => e.objekt === KUNDE && !String(e.kundenadresse || '').trim())) { toast(t('E_ADRESSE')); return; }
     if (E.einsaetze.some(e => e.objekt === KUNDE && !kundeOk(E, e))) { toast(t('fotoFehlt')); return; }
   }
@@ -1105,7 +1109,7 @@ async function qStart() {
     if (warte.length) Q.timer = setTimeout(qStart, Math.max(1000, Math.min.apply(null, warte) - Date.now()));
   }
 }
-window.addEventListener('online', () => { Q.liste.forEach(x => x.naechster = 0); qStart(); });
+window.addEventListener('online', () => { Q.liste.forEach(x => x.naechster = 0); qLaden().catch(() => qStart()); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { Q.liste.forEach(x => x.naechster = 0); qStart(); } });
 function qStatus() {
   const bar = document.getElementById('qbar'); if (!bar || !S) return;
