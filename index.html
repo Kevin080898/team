@@ -176,7 +176,7 @@ const schreib = (k, v) => { try { if (v === null || v === '') localStorage.remov
 const I = {
   de: {
     hallo: 'Hallo', heute: 'Heute', aufgaben: 'Aufgaben', fotos: 'Fotos', woche: 'Rückblick',
-    mehrmals: 'Du kannst mehrmals sprechen – der Text wird angehängt und bleibt gespeichert, bis du ihn auswertest.',
+    mehrmals: 'Du kannst mehrmals sprechen: „Sprechen“ tippen, einen Satz sagen – die Aufnahme endet nach einer kurzen Pause von selbst (oder „Stopp“). Dann wieder „Sprechen“. Der Text wird angehängt und bleibt gespeichert, bis du ihn auswertest.',
     neuErz: 'Neu erzählen', hochTab: 'Hochladen', ansehTab: 'Ansehen', baustellen: 'Fotos je Baustelle', keineFotos: 'Noch keine Fotos.',
     mehrLaden: 'Mehr laden', zurueck: 'Zurück', nochmalLaden: 'Nochmal laden', wirdGeladen: 'Wird geladen …',
     sonstPflicht: 'Bitte kurz angeben, wo du warst oder was du gemacht hast.', notizSonst: 'Wo warst du / was hast du gemacht? (Pflicht)',
@@ -204,6 +204,7 @@ const I = {
     meineTage: 'Meine Tage', monat: 'Dieser Monat', keineTage: 'In diesem Monat gibt es keine Einträge.',
     datenschutz: 'Datenschutz', rueckfrage: 'Rückfrage', zusammenfassung: 'So habe ich es verstanden',
     fehler: 'Das hat nicht geklappt', nochmal: 'Bitte nochmal versuchen.', summeWarn: 'Die Stunden je Objekt ergeben zusammen',
+    mikroHaengt: 'Das Mikrofon hat nicht reagiert. Bitte nochmal auf „Sprechen“ tippen – oder ins Textfeld tippen und das Mikrofon der Tastatur nutzen.',
     mikroAus: 'Das Mikrofon geht hier nicht – nutze das Mikrofon deiner Tastatur.',
     H_MAX10: 'Mehr als 10 Stunden am Tag sind nicht erlaubt.', H_PAUSE30: 'Bei mehr als 6 Stunden sind mindestens 30 Minuten Pause Pflicht.',
     H_PAUSE45: 'Bei mehr als 9 Stunden sind mindestens 45 Minuten Pause Pflicht.', H_SONNTAG: 'Sonntags wird nicht gearbeitet.',
@@ -214,7 +215,7 @@ const I = {
   },
   ro: {
     hallo: 'Salut', heute: 'Azi', aufgaben: 'Sarcini', fotos: 'Poze', woche: 'Istoric',
-    mehrmals: 'Poți vorbi de mai multe ori – textul se adaugă și rămâne salvat până îl analizezi.',
+    mehrmals: 'Poți vorbi de mai multe ori: apasă „Vorbește”, spune o propoziție – înregistrarea se oprește singură după o scurtă pauză (sau „Stop”). Apoi din nou „Vorbește”. Textul se adaugă și rămâne salvat până îl analizezi.',
     neuErz: 'Povestește din nou', hochTab: 'Încarcă', ansehTab: 'Vezi pozele', baustellen: 'Poze pe șantiere', keineFotos: 'Încă nu există poze.',
     mehrLaden: 'Mai multe', zurueck: 'Înapoi', nochmalLaden: 'Încarcă din nou', wirdGeladen: 'Se încarcă …',
     sonstPflicht: 'Te rog scrie pe scurt unde ai fost sau ce ai făcut.', notizSonst: 'Unde ai fost / ce ai făcut? (obligatoriu)',
@@ -242,6 +243,7 @@ const I = {
     meineTage: 'Zilele mele', monat: 'Luna aceasta', keineTage: 'În luna aceasta nu există înregistrări.',
     datenschutz: 'Protecția datelor', rueckfrage: 'Întrebare', zusammenfassung: 'Așa am înțeles',
     fehler: 'Nu a mers', nochmal: 'Te rog încearcă din nou.', summeWarn: 'Orele pe imobile fac împreună',
+    mikroHaengt: 'Microfonul nu a răspuns. Apasă din nou pe „Vorbește” – sau atinge câmpul de text și folosește microfonul de la tastatură.',
     mikroAus: 'Microfonul nu merge aici – folosește microfonul de la tastatură.',
     H_MAX10: 'Mai mult de 10 ore pe zi nu sunt permise.', H_PAUSE30: 'Peste 6 ore de lucru, pauza minimă este de 30 de minute.',
     H_PAUSE45: 'Peste 9 ore de lucru, pauza minimă este de 45 de minute.', H_SONNTAG: 'Duminica nu se lucrează.',
@@ -439,35 +441,63 @@ async function auswerten(text) {
   try { const p = await call('auswerten', { text, datum: S.datum }); p.quelle = 'Sprache'; p.originaltext = text; EDIT = p; laden(false); zeichne(); window.scrollTo(0, 0); }
   catch (e) { fehler(e); }
 }
+// Spracheingabe. Jede Aufnahme hängt ihren Text an. Wichtig auf dem iPhone: Der Spracherkenner ist dort nur einmal vorhanden –
+// eine neue Aufnahme startet erst, wenn die vorige wirklich beendet ist (sonst bleibt sie stumm), und das letzte Wort
+// der vorigen Aufnahme, das oft erst nach „Stopp“ kommt, wird noch übernommen.
 function diktat(ta, btn) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const ruhe = () => { const b = document.getElementById('btnMic') || btn; b.classList.remove('rec'); b.textContent = '🎤 ' + t('sprechen'); };
-  // Läuft eine Aufnahme: beenden und den Knopf sofort freigeben (manche Handys melden das Ende nicht zurück).
+  const knopf = () => document.getElementById('btnMic') || btn;
+  const feld = () => document.getElementById('freitext') || ta;
+  const ruhe = () => { const b = knopf(); b.classList.remove('rec'); b.disabled = false; b.textContent = '🎤 ' + t('sprechen'); };
+  const zeige = txt => { const b = knopf(); b.classList.add('rec'); b.disabled = false; b.textContent = txt; };
+  // Läuft eine Aufnahme: beenden. Der Knopf ist sofort wieder frei; die Aufnahme darf ihr letztes Ergebnis noch nachliefern.
   if (diktat.rec) { const alt = diktat.rec; diktat.rec = null; diktat.alt = alt; try { alt.stop(); } catch (e) { } ruhe(); return; }
-  // Eine frühere Aufnahme, die noch nicht ganz beendet ist, würde die neue blockieren.
-  if (diktat.alt) { try { diktat.alt.onresult = null; diktat.alt.abort(); } catch (e) { } diktat.alt = null; }
-  const starten = versuch => {
+  if (diktat.wartet) return;
+  const los = versuch => {
+    let rec;
     try {
-      const rec = new SR(); diktat.rec = rec;
-      // Android-Chrome wiederholt bei Daueraufnahme erkannte Wörter; dort deshalb Satz für Satz (nach einer Sprechpause einfach erneut tippen).
-      rec.lang = L === 'ro' ? 'ro-RO' : 'de-DE'; rec.continuous = !ANDROID; rec.interimResults = true;
-      const basis = ta.value ? ta.value.trim() + ' ' : '';
-      // Immer in das gerade sichtbare Textfeld schreiben (falls die Seite inzwischen neu aufgebaut wurde).
-      rec.onresult = ev => { let s = ''; for (const r of ev.results) s += r[0].transcript; const feld = document.getElementById('freitext') || ta; feld.value = basis + s; feld.dispatchEvent(new Event('input')); };
+      rec = new SR(); diktat.rec = rec;
+      // Auf Handys Satz für Satz (Daueraufnahme ist auf iPhone und Android unzuverlässig); am Rechner durchgehend.
+      rec.lang = L === 'ro' ? 'ro-RO' : 'de-DE'; rec.continuous = !(IOS || ANDROID); rec.interimResults = true;
+      const basis = feld().value.trim() ? feld().value.trim() + ' ' : '';
+      let gehoert = false;
+      rec.onstart = rec.onaudiostart = () => { gehoert = true; };
+      rec.onresult = ev => {
+        gehoert = true;
+        let s = ''; for (const r of ev.results) s += r[0].transcript;
+        const f = feld(); f.value = basis + s.trim(); f.dispatchEvent(new Event('input'));
+      };
       rec.onerror = ev => {
-        if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') { btn.classList.add('hide'); toast(t('mikroAus')); }
+        if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') { knopf().classList.add('hide'); toast(t('mikroAus')); }
         if (diktat.rec === rec) { diktat.rec = null; ruhe(); }
       };
-      rec.onend = () => { if (diktat.alt === rec) diktat.alt = null; if (diktat.rec === rec) { diktat.rec = null; ruhe(); } };
-      // Knopf nach einem Neuaufbau der Seite: immer den aktuell sichtbaren ansprechen.
-      btn = document.getElementById('btnMic') || btn;
-      rec.start(); btn.classList.add('rec'); btn.textContent = '■ ' + t('stopp');
+      rec.onend = () => {
+        if (diktat.alt === rec) diktat.alt = null;
+        if (diktat.rec === rec) { diktat.rec = null; ruhe(); }
+        if (diktat.weiter) { const w = diktat.weiter; diktat.weiter = null; w(); }
+      };
+      rec.start(); zeige('■ ' + t('stopp'));
+      // Reagiert das Mikrofon nicht (kommt auf dem iPhone gelegentlich vor): einmal neu versuchen, dann Hinweis.
+      setTimeout(() => {
+        if (diktat.rec !== rec || gehoert) return;
+        diktat.rec = null; try { rec.onresult = null; rec.onend = null; rec.abort(); } catch (e) { }
+        if (versuch < 2) { zeige('…'); setTimeout(() => los(versuch + 1), 600); } else { ruhe(); toast(t('mikroHaengt')); }
+      }, 4000);
     } catch (e) {
-      diktat.rec = null; ruhe();
-      if (versuch < 2) setTimeout(() => starten(versuch + 1), 400); else toast(t('mikroAus'));
+      if (diktat.rec === rec) diktat.rec = null;
+      if (versuch < 2) { zeige('…'); setTimeout(() => los(versuch + 1), 600); } else { ruhe(); toast(t('mikroHaengt')); }
     }
   };
-  starten(1);
+  // Die vorige Aufnahme beendet sich noch: auf ihr Ende warten (höchstens 1,5 Sekunden), dann starten.
+  if (diktat.alt) {
+    diktat.wartet = true; zeige('…');
+    const alt = diktat.alt; let fertig = false;
+    const weiter = () => { if (fertig) return; fertig = true; diktat.wartet = false; diktat.alt = null; diktat.weiter = null; setTimeout(() => los(1), 150); };
+    diktat.weiter = weiter;
+    setTimeout(() => { if (fertig) return; try { alt.abort(); } catch (e) { } setTimeout(weiter, 400); }, 1500);
+    return;
+  }
+  los(1);
 }
 
 /* ---------- Editor (Bestätigen / Ändern) ---------- */
