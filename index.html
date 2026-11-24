@@ -258,6 +258,8 @@ const TAGE = { de: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'], ro: ['Du', 'Lu', 
 const TAGE_LANG = { de: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'], ro: ['duminică', 'luni', 'marți', 'miercuri', 'joi', 'vineri', 'sâmbătă'] };
 
 /* ---------- Helfer ---------- */
+// append/replaceChildren sollen leere Teile (null, undefined, false) überspringen statt „null“ anzuzeigen; Listen werden aufgelöst.
+['append', 'replaceChildren'].forEach(n => { const o = Element.prototype[n]; Element.prototype[n] = function (...a) { return o.apply(this, a.flat(Infinity).filter(x => x !== null && x !== undefined && x !== false)); }; });
 function h(tag, attrs, ...kids) {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs || {})) {
