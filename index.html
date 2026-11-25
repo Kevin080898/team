@@ -249,7 +249,12 @@ const I = {
     mikroHaengt: 'Das Mikrofon hat nicht reagiert. Bitte nochmal auf „Sprechen“ tippen – oder ins Textfeld tippen und das Mikrofon der Tastatur nutzen.',
     mikroAus: 'Das Mikrofon geht hier nicht – nutze das Mikrofon deiner Tastatur.',
     H_MAX10: 'Mehr als 10 Stunden am Tag sind nicht erlaubt.', H_PAUSE30: 'Bei mehr als 6 Stunden sind mindestens 30 Minuten Pause Pflicht.',
-    H_PAUSE45: 'Bei mehr als 9 Stunden sind mindestens 45 Minuten Pause Pflicht.', H_SONNTAG: 'Sonntags wird nicht gearbeitet.',
+    H_PAUSE45: 'Bei mehr als 9 Stunden sind mindestens 45 Minuten Pause Pflicht.',
+    H_PAUSE_AUTO: 'Die Pause wurde auf die gesetzliche Mindestpause angehoben (mehr als 6 Std. Arbeit: 30 Min., mehr als 9 Std.: 45 Min.).',
+    pauseGesetz: 'Gesetzliche Mindestpause – abgezogen werden', urlaubBis: 'bis (optional, für mehrere Tage)',
+    urlaubBisHilfe: 'Für einen Zeitraum: „bis“ wählen – die App trägt jeden Arbeitstag (Mo–Sa, ohne Feiertage) als Urlaub ein.',
+    urlaubEingetragen: 'Urlaubstage eingetragen', urlaubUeber: 'Mehr Urlaub eingetragen als Anspruch – bitte mit Kevin klären.', urlaubTitel: 'Urlaub', urlaubAnspruch: 'Anspruch', urlaubGenommen: 'genommen',
+    urlaubGeplant: 'eingetragen (kommt noch)', urlaubUebrig: 'übrig', urlaubAb: 'Urlaubskonto ab', urlaubBeantragt: 'beantragt (zählt nach Kevins Freigabe)', tage: 'Tage', H_SONNTAG: 'Sonntags wird nicht gearbeitet.',
     H_RUHEZEIT: 'Zwischen zwei Arbeitstagen müssen mindestens 11 Stunden Ruhe liegen.', H_SUMME: 'Die Stunden je Objekt passen nicht zur Arbeitszeit.',
     H_ZUKUNFT: 'Das Datum liegt in der Zukunft.', H_NACHTRAG: 'Nachtrag älter als 7 Tage.', H_MINIJOB: 'Achtung: Minijob-Grenze in diesem Monat erreicht. Bitte mit Kevin sprechen.',
     H_KUNDE_OHNE_ADRESSE: 'Bitte die Adresse des Kunden angeben.', H_KUNDE_OHNE_FOTO: 'Kundenauftrag ohne Foto (Grund angegeben).',
@@ -301,7 +306,12 @@ const I = {
     mikroHaengt: 'Microfonul nu a răspuns. Apasă din nou pe „Vorbește” – sau atinge câmpul de text și folosește microfonul de la tastatură.',
     mikroAus: 'Microfonul nu merge aici – folosește microfonul de la tastatură.',
     H_MAX10: 'Mai mult de 10 ore pe zi nu sunt permise.', H_PAUSE30: 'Peste 6 ore de lucru, pauza minimă este de 30 de minute.',
-    H_PAUSE45: 'Peste 9 ore de lucru, pauza minimă este de 45 de minute.', H_SONNTAG: 'Duminica nu se lucrează.',
+    H_PAUSE45: 'Peste 9 ore de lucru, pauza minimă este de 45 de minute.',
+    H_PAUSE_AUTO: 'Pauza a fost mărită la pauza minimă legală (peste 6 ore de lucru: 30 min., peste 9 ore: 45 min.).',
+    pauseGesetz: 'Pauza minimă legală – se scad', urlaubBis: 'până la (opțional, pentru mai multe zile)',
+    urlaubBisHilfe: 'Pentru o perioadă: alege „până la” – aplicația trece fiecare zi lucrătoare (L–S, fără sărbători) drept concediu.',
+    urlaubEingetragen: 'zile de concediu trecute', urlaubUeber: 'Ai trecut mai mult concediu decât ai dreptul – te rog clarifică cu Kevin.', urlaubTitel: 'Concediu', urlaubAnspruch: 'Drept', urlaubGenommen: 'luate',
+    urlaubGeplant: 'trecute (urmează)', urlaubUebrig: 'rămase', urlaubAb: 'Cont de concediu de la', urlaubBeantragt: 'cerute (contează după aprobarea lui Kevin)', tage: 'zile', H_SONNTAG: 'Duminica nu se lucrează.',
     H_RUHEZEIT: 'Între două zile de lucru trebuie să fie cel puțin 11 ore de odihnă.', H_SUMME: 'Orele pe imobile nu se potrivesc cu timpul de lucru.',
     H_ZUKUNFT: 'Data este în viitor.', H_NACHTRAG: 'Înregistrare cu întârziere (peste 7 zile).', H_MINIJOB: 'Atenție: limita de minijob pe luna aceasta este atinsă. Te rog vorbește cu Kevin.',
     H_KUNDE_OHNE_ADRESSE: 'Te rog spune adresa clientului.', H_KUNDE_OHNE_FOTO: 'Lucrare la client fără poză (motiv indicat).',
@@ -397,7 +407,7 @@ async function start() {
     S = frisch; A = admin;
     L = S.me.sprache || 'de';
     document.documentElement.lang = L;
-    if (!UPL.objekt) UPL.objekt = S.me.std.objekt;
+    if (!UPL.objekt || !UPL.gewaehlt) UPL.objekt = S.me.std.objekt;
     if (S.me.rolle === 'Admin' && TAB === 'heute') TAB = 'team';
     // Nicht neu zeichnen, während gerade getippt oder etwas bearbeitet wird.
     if (!gemerkt || !beschaeftigt()) zeichne(); else merke();
@@ -469,6 +479,27 @@ function hinweiseZeigen(r) {
     h('button', { class: 'btn pri', style: 'margin-top:10px', onclick: () => m.classList.remove('on') }, 'OK')));
   m.classList.add('on');
 }
+// Gesetzliche Mindestpause (§ 4 ArbZG) – gleiche Rechnung wie mindestPause_ auf dem Server.
+function mindestPause(spanne, pause) {
+  pause = Math.max(0, Number(pause) || 0);
+  if (!(spanne > 0)) return pause;
+  const auf = noetig => noetig <= pause ? pause : pause + Math.ceil((noetig - pause) / 15) * 15;
+  return Math.min(auf(spanne - 360), auf(Math.max(30, spanne - 540)), auf(45));
+}
+const pauseEin = p => { const x = Number(p); return isNaN(x) ? 0 : Math.max(0, Math.min(240, Math.round(x))); };
+function pauseWirksam(E) { return (!E.beginn || !E.ende) ? pauseEin(E.pause) : mindestPause(minuten(E.ende) - minuten(E.beginn), pauseEin(E.pause)); }
+function urlaubKarte(u, kompakt) {
+  if (!u) return null;
+  if (!u.aktiv) return h('div', { class: 'xs muted' }, '🏖 ' + t('urlaubAb') + ' ' + dDe(u.ab) + ': ' + zahl(u.anspruch) + ' ' + t('tage'));
+  const zeile = [t('urlaubAnspruch') + ' ' + zahl(u.anspruch), t('urlaubGenommen') + ' ' + u.genommen].concat(u.geplant ? [t('urlaubGeplant') + ' ' + u.geplant] : []);
+  if (kompakt) return h('span', {}, ' · 🏖 ' + t('urlaubUebrig') + ' ' + zahl(u.uebrig) + ' / ' + zahl(u.anspruch));
+  return h('div', { class: 'card', id: 'urlaubKarte' },
+    h('div', { class: 'sum', style: 'margin:0' }, h('span', {}, '🏖 ' + t('urlaubTitel') + ' ' + u.jahr), h('span', { style: 'font-size:22px' }, zahl(u.uebrig) + ' ' + t('tage') + ' ' + t('urlaubUebrig'))),
+    h('div', { class: 'xs muted' }, zeile.join(' · ')),
+    u.beantragt ? h('div', { class: 'xs', style: 'color:var(--warn)' }, '📨 ' + u.beantragt + ' ' + t('urlaubBeantragt')) : null,
+    u.uebrig < 0 ? h('div', { class: 'bad' }, '⚠ ' + t('urlaubUeber')) : null,
+    u.abFehler ? h('div', { class: 'bad' }, '⚠ Urlaub_ab ist kein gültiges Datum (JJJJ-MM-TT) – bitte im Blatt „Mitarbeiter“ korrigieren.') : null);
+}
 function hinweisBox(codes) {
   codes = (codes || []).filter(c => c && c !== 'ZUKUNFT');
   return codes.length ? h('div', { class: 'warn' }, codes.map(c => h('div', {}, '⚠ ' + t('H_' + c)))) : null;
@@ -489,7 +520,7 @@ function erfassenKarte(titel, mitStandard) {
   const std = S.me.std;
   const card = h('div', { class: 'card' }, h('h2', {}, titel));
   if (mitStandard) card.append(h('button', { class: 'btn ok', id: 'btnStandard', onclick: standardtag }, t('standard'),
-    h('span', { class: 'sub' }, std.beginn + '–' + std.ende + ' · ' + t('pause') + ' ' + std.pause + ' ' + t('min') + ' · ' + objLabel(std.objekt))));
+    h('span', { class: 'sub' }, std.beginn + '–' + std.ende + ' · ' + t('pause') + ' ' + pauseWirksam(std) + ' ' + t('min') + ' · ' + objLabel(std.objekt))));
   if (S.hatClaude) {
     // Ein Entwurf je Gerät mit Datum: auch ein am Vorabend diktierter Text ist am Morgen noch da.
     let entwurf = null; try { entwurf = JSON.parse(lies(ENTWURF) || 'null'); } catch (e) { }
@@ -624,15 +655,20 @@ const zahlEin = v => { const x = Number(String(v).replace(',', '.').trim()); ret
 /* ---------- Editor (Bestätigen / Ändern) ---------- */
 function editor(v) {
   const E = EDIT;
-  E.einsaetze = (E.einsaetze || []).map(e => Object.assign({ objekt: S.me.std.objekt, stunden: null, taetigkeit: '', kundenadresse: '', fotos: [], ohneFoto: false, ohneFotoGrund: '' }, e));
-  if (E.art === 'Arbeit' && !E.einsaetze.length) E.einsaetze.push({ objekt: S.me.std.objekt, stunden: null, taetigkeit: '', kundenadresse: '', fotos: [], ohneFoto: false, ohneFotoGrund: '' });
+  // Mit der eingetragenen Pause weiterrechnen, nicht mit der gesetzlich angehobenen (die rechnet die App bei jeder Änderung neu).
+  if (E.pauseEingabe !== undefined && E.pauseEingabe !== null) { E.pause = E.pauseEingabe; delete E.pauseEingabe; }
+  if (E.hinweise) E.hinweise = E.hinweise.filter(c => c !== 'PAUSE_AUTO');
   const optionen = S.objekte.map(o => o.name).concat([KUNDE, SONST]);
+  const stdObj = optionen.indexOf(S.me.std.objekt) >= 0 ? S.me.std.objekt : optionen[0];
+  E.einsaetze = (E.einsaetze || []).map(e => Object.assign({ objekt: stdObj, stunden: null, taetigkeit: '', kundenadresse: '', fotos: [], ohneFoto: false, ohneFotoGrund: '' }, e));
+  E.einsaetze.forEach(e => { if (optionen.indexOf(e.objekt) < 0) e.objekt = stdObj; });
+  if (E.art === 'Arbeit' && !E.einsaetze.length) E.einsaetze.push({ objekt: stdObj, stunden: null, taetigkeit: '', kundenadresse: '', fotos: [], ohneFoto: false, ohneFotoGrund: '' });
   const gesperrt = istGesperrt(E.datum, E);
   const card = h('div', { class: 'card' }, h('h2', {}, t('pruefen')));
   if (E.zusammenfassung) card.append(h('div', { class: 'info' }, h('b', {}, t('zusammenfassung') + ': '), E.zusammenfassung));
   if (E.rueckfrage) card.append(h('div', { class: 'warn' }, h('b', {}, t('rueckfrage') + ': '), E.rueckfrage));
   // Ein bestehender Tag bleibt auf seinem Datum (sonst entstünde eine Doppelerfassung); neue Einträge dürfen das Datum wählen.
-  card.append(h('label', {}, t('datum')), h('input', { type: 'date', id: 'edDatum', value: E.datum, max: S.datum, disabled: !!E.tagId,
+  card.append(h('label', {}, t('datum')), h('input', { type: 'date', id: 'edDatum', value: E.datum, max: E.art === 'Urlaub' ? (Number(S.datum.slice(0, 4)) + 1) + '-12-31' : S.datum, disabled: !!E.tagId,
     onchange: ev => { if (/^\d{4}-\d{2}-\d{2}$/.test(ev.target.value)) { E.datum = ev.target.value; E.zwingendAntrag = false; zeichne(); } else ev.target.value = E.datum; } }));
   if (gesperrt) card.append(h('div', { class: 'warn', id: 'edGesperrt' }, '🔒 ' + (tagInfo(E.datum) ? t('gesperrt') : t('gesperrtNeu'))));
   else { const info = tagInfo(E.datum); if (info && info.aenderbarBis) card.append(h('div', { class: 'xs muted', style: 'margin-top:6px' }, t('aenderbarBis') + ' ' + dDe(info.aenderbarBis))); }
@@ -640,10 +676,15 @@ function editor(v) {
     h('button', { class: 'chip' + (E.art === a ? ' on' : ''), onclick: () => {
       // Wechsel von Urlaub/Krank/Feiertag zurück auf Arbeit: Standardzeiten, -pause und -objekt übernehmen, statt leer/0 zu speichern
       if (a === 'Arbeit' && E.art !== 'Arbeit') { E.beginn = E.beginn || S.me.std.beginn; E.ende = E.ende || S.me.std.ende; E.pause = S.me.std.pause; }
+      if (a !== 'Urlaub') { E.bis = ''; if (!E.tagId && E.datum > S.datum) E.datum = S.datum; }
       E.art = a;
       zeichne(); } }, t(a)))));
+  if (E.art === 'Urlaub' && !E.tagId) card.append(h('label', {}, t('urlaubBis')), h('input', { type: 'date', id: 'edBis', value: E.bis || '', min: E.datum,
+    max: (Number(S.datum.slice(0, 4)) + 1) + '-12-31', onchange: ev => { E.bis = ev.target.value; } }), h('div', { class: 'xs muted' }, t('urlaubBisHilfe')));
+  if (E.art === 'Urlaub' && S.urlaub && S.urlaub.aktiv && String(E.datum).slice(0, 4) === S.urlaub.jahr) card.append(h('div', { class: 'xs muted', id: 'edUrlaub', style: 'margin-top:6px' },
+    '🏖 ' + t('urlaubTitel') + ' ' + S.urlaub.jahr + ': ' + zahl(S.urlaub.uebrig) + ' ' + t('tage') + ' ' + t('urlaubUebrig') + ' (' + t('urlaubAnspruch') + ' ' + zahl(S.urlaub.anspruch) + ')'));
   const live = h('div', { id: 'edLive' });
-  const az = () => (!E.beginn || !E.ende) ? 0 : Math.round(Math.max(0, (minuten(E.ende) - minuten(E.beginn) - (Number(E.pause) || 0)) / 60) * 100) / 100;
+  const az = () => (!E.beginn || !E.ende) ? 0 : Math.round(Math.max(0, (minuten(E.ende) - minuten(E.beginn) - pauseWirksam(E)) / 60) * 100) / 100;
   const rechne = () => {
     if (E.einsaetze.length === 1) { E.einsaetze[0].stunden = az(); const f = document.getElementById('std0'); if (f && document.activeElement !== f) f.value = String(E.einsaetze[0].stunden).replace('.', L === 'ro' || L === 'de' ? ',' : '.'); }
     const summe = Math.round(E.einsaetze.reduce((s, e) => s + (Number(e.stunden) || 0), 0) * 100) / 100;
@@ -651,9 +692,10 @@ function editor(v) {
     const codes = [];
     const A_ = az();
     if (A_ > 10) codes.push('MAX10');
-    if (A_ > 9 && E.pause < 45) codes.push('PAUSE45'); else if (A_ > 6 && E.pause < 30) codes.push('PAUSE30');
+    const pw = pauseWirksam(E);
     if (new Date(E.datum + 'T12:00:00').getDay() === 0) codes.push('SONNTAG');
-    live.replaceChildren(h('div', { class: 'sum' }, h('span', {}, t('arbeitszeit')), h('span', {}, zahl(A_) + ' ' + t('std'))),
+    live.replaceChildren(pw > pauseEin(E.pause) ? h('div', { class: 'warn', id: 'edPauseGesetz' }, '⏸ ' + t('pauseGesetz') + ': ' + pw + ' ' + t('min') + ' (§ 4 ArbZG)') : null,
+      h('div', { class: 'sum' }, h('span', {}, t('arbeitszeit')), h('span', {}, zahl(A_) + ' ' + t('std'))),
       E.einsaetze.length > 1 ? (Math.round(diff * 100) === 0
         ? h('div', { class: 'xs', style: 'color:var(--ok);margin-top:4px' }, '✓ ' + t('summeOk'))
         : h('div', { class: 'bad', id: 'edSumme' }, '⚠ ' + (diff > 0 ? t('summeOffen') : t('summeZuViel')) + ': ' + zahl(Math.abs(diff)) + ' ' + t('std') + '. ' + t('summeRegel'))) : null,
@@ -733,7 +775,7 @@ function kundenFotoBox(E, e) {
 async function speichern() {
   const E = EDIT;
   // Prüfen vor dem Senden – mit verständlicher Meldung statt eines Serverfehlers
-  const az = Math.round(Math.max(0, (minuten(E.ende) - minuten(E.beginn) - (Number(E.pause) || 0)) / 60) * 100) / 100;
+  const az = Math.round(Math.max(0, (minuten(E.ende) - minuten(E.beginn) - pauseWirksam(E)) / 60) * 100) / 100;
   if (E.art === 'Arbeit') {
     if (!E.beginn || !E.ende || minuten(E.ende) <= minuten(E.beginn) || az <= 0) { toast(t('E_ZEIT')); return; }
     if (E.einsaetze.length === 1) E.einsaetze[0].stunden = az;
@@ -755,6 +797,12 @@ async function speichern() {
       if (E.einsaetze.some(e => e.objekt === KUNDE && (e.fotos || []).length && !(e.fotos || []).some(f => f.id) && !vorhandeneKundenFotos(E, e).length)) { laden(false); toast(t('fotoNichtFertig')); return; }
     }
     laden(true, t('speichern') + ' …');
+    if (E.art === 'Urlaub' && !E.tagId && E.bis && E.bis > E.datum) {
+      const z = await call('urlaubZeitraum', { von: E.datum, bis: E.bis, grund: gesperrt ? E.grund : '' });
+      EDIT = null; NEUERF = false; RB.data = null; cacheWeg('monat'); S = await call('init'); laden(false); zeichne(); window.scrollTo(0, 0);
+      toast('🏖 ' + z.anzahl + ' ' + t('urlaubEingetragen') + (z.antraege && z.antraege.length ? ' · 📨 ' + z.antraege.length + ' ' + t('beantragt') : ''));
+      return;
+    }
     const einsaetze = E.einsaetze.map(e => ({ objekt: e.objekt, stunden: e.stunden, taetigkeit: e.taetigkeit, kundenadresse: e.kundenadresse,
       fotoIds: (e.fotoIds || []).concat((e.fotos || []).filter(f => f.id).map(f => f.id)), ohneFoto: !!e.ohneFoto, ohneFotoGrund: e.ohneFotoGrund || '' }));
     const r = await call('speichern', { tag: { datum: E.datum, art: E.art, beginn: E.beginn, ende: E.ende, pause: E.pause, einsaetze: einsaetze, grund: gesperrt ? E.grund : '' }, quelle: E.quelle || 'Manuell', originaltext: E.originaltext || '' });
@@ -814,6 +862,7 @@ function vFotos(v) {
     h('button', { class: FOT.modus === 'ansehen' ? 'on' : '', id: 'segAnsehen', onclick: () => { FOT.modus = 'ansehen'; zeichne(); } }, t('ansehTab'))));
   if (FOT.modus === 'ansehen') return galerie(v);
   const optionen = S.objekte.map(o => o.name).concat([KUNDE, SONST]);
+  if (optionen.indexOf(UPL.objekt) < 0) UPL.objekt = optionen.indexOf(S.me.std.objekt) >= 0 ? S.me.std.objekt : optionen[0];
   const thumbs = h('div', { class: 'thumbs' });
   const zeigeThumbs = () => {
     thumbs.replaceChildren(...UPL.files.map((f, i) => h('div', {},
@@ -846,7 +895,7 @@ function vFotos(v) {
     h('label', {}, t('fotoArt')),
     h('div', { class: 'chips' }, ['Foto', 'Schaden', 'Beleg', 'Sonstiges'].map(a => h('button', { class: 'chip' + (UPL.art === a ? ' on' : ''), onclick: () => { UPL.art = a; zeichne(); } }, a === 'Sonstiges' ? t('Sonstiges').split(' (')[0] : t(a)))),
     h('label', {}, t('objekt')),
-    h('select', { id: 'uplObjekt', onchange: ev => { UPL.objekt = ev.target.value; zeichne(); } }, optionen.map(o => h('option', { value: o, selected: UPL.objekt === o }, objLabel(o)))),
+    h('select', { id: 'uplObjekt', onchange: ev => { UPL.objekt = ev.target.value; UPL.gewaehlt = true; zeichne(); } }, optionen.map(o => h('option', { value: o, selected: UPL.objekt === o }, objLabel(o)))),
     UPL.objekt === KUNDE ? [h('label', {}, t('adressePflicht')), h('input', { id: 'uplAdresse', value: UPL.adresse, placeholder: 'Hauptstraße 12, Ettlingen', oninput: ev => UPL.adresse = ev.target.value })] : null,
     h('label', {}, sonst ? t('notizSonst') : (UPL.objekt === KUNDE ? t('notizKunde') : t('notiz'))), h('input', { id: 'uplNotiz', value: UPL.notiz, oninput: ev => UPL.notiz = ev.target.value }),
     h('button', { class: 'btn sec', style: 'margin-top:14px', onclick: () => inp.click() }, '📷 ' + t('fotoWaehlen')), inp, thumbs, hoch));
@@ -1179,7 +1228,9 @@ function rueckblick(v, maId) {
     Z.soll ? h('div', { class: 'xs muted', style: 'text-align:right' }, t('von200')) : null,
     h('div', { class: 'kpi' },
       h('div', {}, h('b', {}, Z.arbeitstage), h('span', {}, t('arbeitstage'))), h('div', {}, h('b', {}, Z.urlaub), h('span', {}, t('Urlaub'))),
-      h('div', {}, h('b', {}, Z.krank), h('span', {}, t('Krank'))), h('div', {}, h('b', {}, Z.feiertag), h('span', {}, t('Feiertag'))))));
+      h('div', {}, h('b', {}, Z.krank), h('span', {}, t('Krank'))), h('div', {}, h('b', {}, Z.feiertag), h('span', {}, t('Feiertag')))),
+    D.urlaub && !D.urlaub.aktiv ? urlaubKarte(D.urlaub) : null));
+  if (D.urlaub && D.urlaub.aktiv) v.append(urlaubKarte(D.urlaub));
   if (D.fehlend.length) v.append(h('div', { class: 'card' }, h('h2', {}, '⚠ ' + t('fehlend') + ' (' + D.fehlend.length + ')'),
     h('div', { class: 'chips' }, D.fehlend.map(d => eigen
       ? h('button', { class: 'chip', 'data-antrag': (S.antraege || []).some(a => a.datum === d && a.status === 'beantragt') ? '1' : null, onclick: () => { const std = S.me.std; EDIT = { datum: d, art: 'Arbeit', beginn: std.beginn, ende: std.ende, pause: std.pause, einsaetze: [{ objekt: std.objekt, stunden: null, taetigkeit: '', kundenadresse: '' }], quelle: 'Manuell' }; TAB = 'heute'; zeichne(); window.scrollTo(0, 0); } }, ((S.antraege || []).some(a => a.datum === d && a.status === 'beantragt') ? '📨 ' : '') + dKurz(d))
@@ -1277,7 +1328,7 @@ function aTeam(v) {
     v.append(h('div', { class: 'card' },
       h('div', { style: 'display:flex;justify-content:space-between;gap:8px' }, h('h2', { style: 'margin:0' }, m.name),
         h('span', { class: 'badge ' + (m.heute ? 'b-ok' : 'b-warn') }, m.heute ? 'heute erfasst' : 'heute offen')),
-      h('div', { class: 'small muted' }, (m.beschaeftigung || '') + ' · Sprache ' + (m.sprache || 'de').toUpperCase() + ' · ' + zahl(m.monat) + ' Std. im Monat' + (m.letzterBesuch ? ' · zuletzt in der App ' + dDe(m.letzterBesuch.slice(0, 16)) : '')),
+      h('div', { class: 'small muted' }, (m.beschaeftigung || '') + ' · Sprache ' + (m.sprache || 'de').toUpperCase() + ' · ' + zahl(m.monat) + ' Std. im Monat' + (m.letzterBesuch ? ' · zuletzt in der App ' + dDe(m.letzterBesuch.slice(0, 16)) : ''), m.urlaub && m.urlaub.aktiv ? urlaubKarte(m.urlaub, true) : (m.urlaub ? ' · 🏖 ab ' + dDe(m.urlaub.ab) + ': ' + zahl(m.urlaub.anspruch) + ' Tage' : '')),
       h('label', {}, 'Persönlicher Link (per WhatsApp schicken, auf dem Handy zum Startbildschirm hinzufügen)'), linkFeld,
       h('div', { class: 'row', style: 'margin-top:8px' },
         h('button', { class: 'btn sec', style: 'min-height:44px;padding:10px', onclick: async () => { try { await navigator.clipboard.writeText(m.link); toast('Link kopiert'); } catch (e) { linkFeld.select(); toast('Link markiert – jetzt kopieren'); } } }, 'Link kopieren'),
