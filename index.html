@@ -245,16 +245,20 @@ const I = {
     gesperrtNeu: 'Dieser Tag liegt zu weit zurück, um ihn direkt nachzutragen. Dein Eintrag geht als Antrag an Kevin – er zählt, sobald Kevin ihn übernimmt.',
     grund: 'Grund für die Änderung (Pflicht)', grundFehlt: 'Bitte den Grund angeben (mind. 10 Zeichen).', beantragen: 'Änderung beantragen', antragGesendet: 'Antrag an Kevin gesendet',
     beantragt: 'Änderung beantragt – wartet auf Kevin', abgelehnt: 'Änderung von Kevin abgelehnt', aenderbarBis: 'änderbar bis',
-    E_SUMME: 'Die Stunden je Objekt müssen genau die Arbeitszeit ergeben.', E_ZUKUNFT: 'Arbeitszeit kann nicht für einen Tag in der Zukunft erfasst werden.',
+    E_SUMME: 'Die Stunden je Objekt müssen genau die Arbeitszeit ergeben.', E_ZUKUNFT: 'Arbeit, Krank und Feiertag kannst du erst am Tag selbst eintragen. Urlaub im Voraus bitte als Urlaub beantragen.',
+    E_URLAUB_DOPPELT: 'Für diese Tage ist bereits Urlaub eingetragen oder beantragt.', E_ANTRAG_ERLEDIGT: 'Dieser Antrag ist schon entschieden oder zurückgezogen.',
+    uStorniert: 'von Kevin storniert', tag1: 'Tag',
     mikroHaengt: 'Das Mikrofon hat nicht reagiert. Bitte nochmal auf „Sprechen“ tippen – oder ins Textfeld tippen und das Mikrofon der Tastatur nutzen.',
     mikroAus: 'Das Mikrofon geht hier nicht – nutze das Mikrofon deiner Tastatur.',
     H_MAX10: 'Mehr als 10 Stunden am Tag sind nicht erlaubt.', H_PAUSE30: 'Bei mehr als 6 Stunden sind mindestens 30 Minuten Pause Pflicht.',
     H_PAUSE45: 'Bei mehr als 9 Stunden sind mindestens 45 Minuten Pause Pflicht.',
     H_PAUSE_AUTO: 'Die Pause wurde auf die gesetzliche Mindestpause angehoben (mehr als 6 Std. Arbeit: 30 Min., mehr als 9 Std.: 45 Min.).',
-    pauseGesetz: 'Gesetzliche Mindestpause – abgezogen werden', urlaubBis: 'bis (optional, für mehrere Tage)',
+    pauseGesetz: 'Gesetzliche Mindestpause – abgezogen werden', urlaubsantragInfo: 'Urlaub in der Zukunft geht als Urlaubsantrag an Kevin. Er zählt, sobald Kevin ihn genehmigt.',
+    urlaubBemerkung: 'Bemerkung für Kevin (freiwillig)', urlaubBeantragen: 'Urlaub beantragen', urlaubsantragGesendet: 'Urlaubsantrag an Kevin gesendet',
+    meinUrlaub: 'Mein Urlaub', uBeantragt: 'beantragt – wartet auf Kevin', uGenehmigt: 'genehmigt', uAbgelehnt: 'abgelehnt', zurueckziehen: 'Antrag zurückziehen', wirklich: 'Wirklich?', urlaubBis: 'bis (optional, für mehrere Tage)',
     urlaubBisHilfe: 'Für einen Zeitraum: „bis“ wählen – die App trägt jeden Arbeitstag (Mo–Sa, ohne Feiertage) als Urlaub ein.',
     urlaubEingetragen: 'Urlaubstage eingetragen', urlaubUeber: 'Mehr Urlaub eingetragen als Anspruch – bitte mit Kevin klären.', urlaubTitel: 'Urlaub', urlaubAnspruch: 'Anspruch', urlaubGenommen: 'genommen',
-    urlaubGeplant: 'eingetragen (kommt noch)', urlaubUebrig: 'übrig', urlaubAb: 'Urlaubskonto ab', urlaubBeantragt: 'beantragt (zählt nach Kevins Freigabe)', tage: 'Tage', H_SONNTAG: 'Sonntags wird nicht gearbeitet.',
+    urlaubGeplant: 'genehmigt (kommt noch)', urlaubUebrig: 'übrig', urlaubAb: 'Urlaubskonto ab', urlaubBeantragt: 'beantragt (zählt nach Kevins Freigabe)', tage: 'Tage', H_SONNTAG: 'Sonntags wird nicht gearbeitet.',
     H_RUHEZEIT: 'Zwischen zwei Arbeitstagen müssen mindestens 11 Stunden Ruhe liegen.', H_SUMME: 'Die Stunden je Objekt passen nicht zur Arbeitszeit.',
     H_ZUKUNFT: 'Das Datum liegt in der Zukunft.', H_NACHTRAG: 'Nachtrag älter als 7 Tage.', H_MINIJOB: 'Achtung: Minijob-Grenze in diesem Monat erreicht. Bitte mit Kevin sprechen.',
     H_KUNDE_OHNE_ADRESSE: 'Bitte die Adresse des Kunden angeben.', H_KUNDE_OHNE_FOTO: 'Kundenauftrag ohne Foto (Grund angegeben).',
@@ -302,16 +306,20 @@ const I = {
     gesperrtNeu: 'Ziua aceasta este prea veche pentru a fi completată direct. Înregistrarea ta merge ca cerere la Kevin – contează după ce o acceptă.',
     grund: 'Motivul modificării (obligatoriu)', grundFehlt: 'Te rog scrie motivul (min. 10 caractere).', beantragen: 'Cere modificarea', antragGesendet: 'Cererea a fost trimisă lui Kevin',
     beantragt: 'Modificare cerută – așteaptă răspunsul lui Kevin', abgelehnt: 'Modificare respinsă de Kevin', aenderbarBis: 'modificabil până la',
-    E_SUMME: 'Orele pe imobile trebuie să dea exact timpul de lucru.', E_ZUKUNFT: 'Timpul de lucru nu poate fi înregistrat pentru o zi din viitor.',
+    E_SUMME: 'Orele pe imobile trebuie să dea exact timpul de lucru.', E_ZUKUNFT: 'Lucru, boală și sărbătoare le poți trece abia în ziua respectivă. Concediul dinainte te rog să-l ceri ca concediu.',
+    E_URLAUB_DOPPELT: 'Pentru aceste zile ai deja concediu trecut sau cerut.', E_ANTRAG_ERLEDIGT: 'Cererea aceasta este deja decisă sau retrasă.',
+    uStorniert: 'anulat de Kevin', tag1: 'zi',
     mikroHaengt: 'Microfonul nu a răspuns. Apasă din nou pe „Vorbește” – sau atinge câmpul de text și folosește microfonul de la tastatură.',
     mikroAus: 'Microfonul nu merge aici – folosește microfonul de la tastatură.',
     H_MAX10: 'Mai mult de 10 ore pe zi nu sunt permise.', H_PAUSE30: 'Peste 6 ore de lucru, pauza minimă este de 30 de minute.',
     H_PAUSE45: 'Peste 9 ore de lucru, pauza minimă este de 45 de minute.',
     H_PAUSE_AUTO: 'Pauza a fost mărită la pauza minimă legală (peste 6 ore de lucru: 30 min., peste 9 ore: 45 min.).',
-    pauseGesetz: 'Pauza minimă legală – se scad', urlaubBis: 'până la (opțional, pentru mai multe zile)',
+    pauseGesetz: 'Pauza minimă legală – se scad', urlaubsantragInfo: 'Concediul în viitor merge ca cerere de concediu la Kevin. Contează după ce Kevin îl aprobă.',
+    urlaubBemerkung: 'Observație pentru Kevin (opțional)', urlaubBeantragen: 'Cere concediu', urlaubsantragGesendet: 'Cererea de concediu a fost trimisă lui Kevin',
+    meinUrlaub: 'Concediul meu', uBeantragt: 'cerut – așteaptă răspunsul lui Kevin', uGenehmigt: 'aprobat', uAbgelehnt: 'respins', zurueckziehen: 'Retrage cererea', wirklich: 'Sigur?', urlaubBis: 'până la (opțional, pentru mai multe zile)',
     urlaubBisHilfe: 'Pentru o perioadă: alege „până la” – aplicația trece fiecare zi lucrătoare (L–S, fără sărbători) drept concediu.',
     urlaubEingetragen: 'zile de concediu trecute', urlaubUeber: 'Ai trecut mai mult concediu decât ai dreptul – te rog clarifică cu Kevin.', urlaubTitel: 'Concediu', urlaubAnspruch: 'Drept', urlaubGenommen: 'luate',
-    urlaubGeplant: 'trecute (urmează)', urlaubUebrig: 'rămase', urlaubAb: 'Cont de concediu de la', urlaubBeantragt: 'cerute (contează după aprobarea lui Kevin)', tage: 'zile', H_SONNTAG: 'Duminica nu se lucrează.',
+    urlaubGeplant: 'aprobate (urmează)', urlaubUebrig: 'rămase', urlaubAb: 'Cont de concediu de la', urlaubBeantragt: 'cerute (contează după aprobarea lui Kevin)', tage: 'zile', H_SONNTAG: 'Duminica nu se lucrează.',
     H_RUHEZEIT: 'Între două zile de lucru trebuie să fie cel puțin 11 ore de odihnă.', H_SUMME: 'Orele pe imobile nu se potrivesc cu timpul de lucru.',
     H_ZUKUNFT: 'Data este în viitor.', H_NACHTRAG: 'Înregistrare cu întârziere (peste 7 zile).', H_MINIJOB: 'Atenție: limita de minijob pe luna aceasta este atinsă. Te rog vorbește cu Kevin.',
     H_KUNDE_OHNE_ADRESSE: 'Te rog spune adresa clientului.', H_KUNDE_OHNE_FOTO: 'Lucrare la client fără poză (motiv indicat).',
@@ -472,7 +480,7 @@ document.querySelectorAll('#lang button').forEach(b => b.addEventListener('click
 // Nach dem Speichern: Bestätigung und alle Prüfhinweise des Servers (Sonntag, Ruhezeit, Pausen …) gut sichtbar zeigen.
 function hinweiseZeigen(r) {
   const codes = (r && r.hinweise || []).filter(c => c !== 'ZUKUNFT' && c !== 'KUNDE_OHNE_FOTO');
-  const kopf = r && r.antrag ? '📨 ' + t('antragGesendet') : '✓ ' + t('gespeichert') + (r && r.datum && r.datum !== S.datum ? ' (' + dKurz(r.datum) + ')' : '');
+  const kopf = r && r.urlaubsantrag ? '📨 ' + t('urlaubsantragGesendet') : r && r.antrag ? '📨 ' + t('antragGesendet') : '✓ ' + t('gespeichert') + (r && r.datum && r.datum !== S.datum ? ' (' + dKurz(r.datum) + ')' : '');
   if (!codes.length) { toast(kopf); return; }
   const m = document.getElementById('modal');
   m.replaceChildren(h('div', { class: 'card' }, h('h2', {}, kopf), hinweisBox(codes),
@@ -493,12 +501,26 @@ function urlaubKarte(u, kompakt) {
   if (!u.aktiv) return h('div', { class: 'xs muted' }, '🏖 ' + t('urlaubAb') + ' ' + dDe(u.ab) + ': ' + zahl(u.anspruch) + ' ' + t('tage'));
   const zeile = [t('urlaubAnspruch') + ' ' + zahl(u.anspruch), t('urlaubGenommen') + ' ' + u.genommen].concat(u.geplant ? [t('urlaubGeplant') + ' ' + u.geplant] : []);
   if (kompakt) return h('span', {}, ' · 🏖 ' + t('urlaubUebrig') + ' ' + zahl(u.uebrig) + ' / ' + zahl(u.anspruch));
-  return h('div', { class: 'card', id: 'urlaubKarte' },
+  return h('div', { class: 'card', id: 'urlaubKarte' + (u.jahr > String(S.datum).slice(0, 4) ? 'Naechstes' : '') },
     h('div', { class: 'sum', style: 'margin:0' }, h('span', {}, '🏖 ' + t('urlaubTitel') + ' ' + u.jahr), h('span', { style: 'font-size:22px' }, zahl(u.uebrig) + ' ' + t('tage') + ' ' + t('urlaubUebrig'))),
     h('div', { class: 'xs muted' }, zeile.join(' · ')),
     u.beantragt ? h('div', { class: 'xs', style: 'color:var(--warn)' }, '📨 ' + u.beantragt + ' ' + t('urlaubBeantragt')) : null,
     u.uebrig < 0 ? h('div', { class: 'bad' }, '⚠ ' + t('urlaubUeber')) : null,
     u.abFehler ? h('div', { class: 'bad' }, '⚠ Urlaub_ab ist kein gültiges Datum (JJJJ-MM-TT) – bitte im Blatt „Mitarbeiter“ korrigieren.') : null);
+}
+// Urlaub je Zeitraum: beantragt (zurückziehen möglich), genehmigt, abgelehnt. Verwaltung: mit Namen und „Stornieren“.
+function urlaubsplanKarte(plan, verwaltung) {
+  const st = x => x.status === 'beantragt' ? '⏳ ' + t('uBeantragt') : x.status === 'gültig' ? '✓ ' + t('uGenehmigt') : x.status === 'storniert' ? '⊘ ' + t('uStorniert') : '✗ ' + t('uAbgelehnt');
+  const knopf = (txt, frage, los) => { const b = h('button', { class: 'btn sec', style: 'min-height:40px;padding:8px;margin-top:6px' }, txt);
+    b.onclick = async () => { if (!b.dataset.sicher) { b.dataset.sicher = '1'; b.textContent = frage; return; }
+      laden(true, '…'); try { await los(); if (verwaltung) await neuLaden('OK'); else { S = await call('init'); RB.data = null; laden(false); zeichne(); } } catch (e) { fehler(e); } };
+    return b; };
+  return h('div', { class: 'card', id: verwaltung ? 'urlaubsplanTeam' : 'urlaubsplan' }, h('h2', {}, '🏖 ' + (verwaltung ? 'Urlaubsplanung' : t('meinUrlaub'))),
+    plan.map(x => h('div', { class: 'einsatz', 'data-status': x.status },
+      h('b', {}, (verwaltung ? x.name + ' · ' : '') + x.text), h('div', { class: 'small' }, x.anzahl + ' ' + (x.anzahl === 1 ? t('tag1') : t('tage')) + ' · ' + st(x)),
+      x.grund ? h('div', { class: 'xs muted' }, x.grund) : null,
+      !verwaltung && x.status === 'beantragt' && x.gruppe ? knopf(t('zurueckziehen'), t('wirklich'), () => call('antragZurueck', { gruppe: x.gruppe })) : null,
+      verwaltung && x.status === 'gültig' ? knopf('Stornieren', 'Wirklich stornieren?', () => call('urlaubStorno', x.gruppe ? { gruppe: x.gruppe } : { tagId: x.tagId })) : null)));
 }
 function hinweisBox(codes) {
   codes = (codes || []).filter(c => c && c !== 'ZUKUNFT');
@@ -653,6 +675,8 @@ function istGesperrt(datum, E) {
 const zahlEin = v => { const x = Number(String(v).replace(',', '.').trim()); return String(v).trim() === '' || isNaN(x) ? null : Math.max(0, Math.round(x * 100) / 100); };
 
 /* ---------- Editor (Bestätigen / Ändern) ---------- */
+// Urlaub für künftige Tage ist ein Urlaubsantrag an Kevin (nicht für die Verwaltung).
+function urlaubsantragNoetig(E) { return E.art === 'Urlaub' && !E.tagId && S.me.rolle !== 'Admin' && ((E.bis && E.bis > S.datum) || E.datum > S.datum); }
 function editor(v) {
   const E = EDIT;
   // Mit der eingetragenen Pause weiterrechnen, nicht mit der gesetzlich angehobenen (die rechnet die App bei jeder Änderung neu).
@@ -680,7 +704,7 @@ function editor(v) {
       E.art = a;
       zeichne(); } }, t(a)))));
   if (E.art === 'Urlaub' && !E.tagId) card.append(h('label', {}, t('urlaubBis')), h('input', { type: 'date', id: 'edBis', value: E.bis || '', min: E.datum,
-    max: (Number(S.datum.slice(0, 4)) + 1) + '-12-31', onchange: ev => { E.bis = ev.target.value; } }), h('div', { class: 'xs muted' }, t('urlaubBisHilfe')));
+    max: (Number(S.datum.slice(0, 4)) + 1) + '-12-31', onchange: ev => { E.bis = ev.target.value; zeichne(); } }), h('div', { class: 'xs muted' }, t('urlaubBisHilfe')));
   if (E.art === 'Urlaub' && S.urlaub && S.urlaub.aktiv && String(E.datum).slice(0, 4) === S.urlaub.jahr) card.append(h('div', { class: 'xs muted', id: 'edUrlaub', style: 'margin-top:6px' },
     '🏖 ' + t('urlaubTitel') + ' ' + S.urlaub.jahr + ': ' + zahl(S.urlaub.uebrig) + ' ' + t('tage') + ' ' + t('urlaubUebrig') + ' (' + t('urlaubAnspruch') + ' ' + zahl(S.urlaub.anspruch) + ')'));
   const live = h('div', { id: 'edLive' });
@@ -732,8 +756,11 @@ function editor(v) {
       E.einsaetze.push({ objekt: S.me.std.objekt, stunden: E.einsaetze.length === 1 ? 0 : null, taetigkeit: '', kundenadresse: '', fotos: [], ohneFoto: false, ohneFotoGrund: '' }); zeichne(); } }, t('weiteres')));
     card.append(live); rechne();
   }
+  const uAntrag = urlaubsantragNoetig(E);
+  if (uAntrag && !gesperrt) card.append(h('div', { class: 'info', id: 'edUrlaubsantrag' }, '📨 ' + t('urlaubsantragInfo')),
+    h('label', {}, t('urlaubBemerkung')), h('textarea', { id: 'edGrund', style: 'min-height:60px', value: E.grund || '', oninput: ev => { E.grund = ev.target.value; } }));
   if (gesperrt) card.append(h('label', {}, t('grund')), h('textarea', { id: 'edGrund', style: 'min-height:80px', value: E.grund || '', oninput: ev => { E.grund = ev.target.value; } }));
-  card.append(h('button', { class: 'btn ok', id: 'btnSpeichern', style: 'margin-top:14px', onclick: speichern }, gesperrt ? '📨 ' + t('beantragen') : t('speichern')),
+  card.append(h('button', { class: 'btn ok', id: 'btnSpeichern', style: 'margin-top:14px', onclick: speichern }, gesperrt ? '📨 ' + t('beantragen') : (uAntrag ? '📨 ' + t('urlaubBeantragen') : t('speichern'))),
     h('button', { class: 'btn link', onclick: () => { EDIT = null; zeichne(); } }, t('abbrechen')));
   v.append(card);
 }
@@ -798,14 +825,14 @@ async function speichern() {
     }
     laden(true, t('speichern') + ' …');
     if (E.art === 'Urlaub' && !E.tagId && E.bis && E.bis > E.datum) {
-      const z = await call('urlaubZeitraum', { von: E.datum, bis: E.bis, grund: gesperrt ? E.grund : '' });
+      const z = await call('urlaubZeitraum', { von: E.datum, bis: E.bis, grund: (gesperrt || urlaubsantragNoetig(E)) ? E.grund : '' });
       EDIT = null; NEUERF = false; RB.data = null; cacheWeg('monat'); S = await call('init'); laden(false); zeichne(); window.scrollTo(0, 0);
-      toast('🏖 ' + z.anzahl + ' ' + t('urlaubEingetragen') + (z.antraege && z.antraege.length ? ' · 📨 ' + z.antraege.length + ' ' + t('beantragt') : ''));
+      toast(z.urlaubsantrag ? '📨 ' + t('urlaubsantragGesendet') + ' (' + z.beantragtAnzahl + ' ' + (z.beantragtAnzahl === 1 ? t('tag1') : t('tage')) + ')' : '🏖 ' + z.anzahl + ' ' + t('urlaubEingetragen') + (z.antraege && z.antraege.length ? ' · 📨 ' + z.antraege.length + ' ' + t('beantragt') : ''));
       return;
     }
     const einsaetze = E.einsaetze.map(e => ({ objekt: e.objekt, stunden: e.stunden, taetigkeit: e.taetigkeit, kundenadresse: e.kundenadresse,
       fotoIds: (e.fotoIds || []).concat((e.fotos || []).filter(f => f.id).map(f => f.id)), ohneFoto: !!e.ohneFoto, ohneFotoGrund: e.ohneFotoGrund || '' }));
-    const r = await call('speichern', { tag: { datum: E.datum, art: E.art, beginn: E.beginn, ende: E.ende, pause: E.pause, einsaetze: einsaetze, grund: gesperrt ? E.grund : '' }, quelle: E.quelle || 'Manuell', originaltext: E.originaltext || '' });
+    const r = await call('speichern', { tag: { datum: E.datum, art: E.art, beginn: E.beginn, ende: E.ende, pause: E.pause, einsaetze: einsaetze, grund: (gesperrt || urlaubsantragNoetig(E)) ? E.grund : '' }, quelle: E.quelle || 'Manuell', originaltext: E.originaltext || '' });
     if (E.quelle === 'Sprache') schreib(ENTWURF, null);
     EDIT = null; NEUERF = false; RB.data = null; cacheWeg('monat'); S = await call('init'); laden(false); zeichne(); window.scrollTo(0, 0);
     hinweiseZeigen(r);
@@ -1231,6 +1258,8 @@ function rueckblick(v, maId) {
       h('div', {}, h('b', {}, Z.krank), h('span', {}, t('Krank'))), h('div', {}, h('b', {}, Z.feiertag), h('span', {}, t('Feiertag')))),
     D.urlaub && !D.urlaub.aktiv ? urlaubKarte(D.urlaub) : null));
   if (D.urlaub && D.urlaub.aktiv) v.append(urlaubKarte(D.urlaub));
+  if (eigen && S.urlaubNaechstes && (!D.urlaub || D.urlaub.jahr !== S.urlaubNaechstes.jahr)) v.append(urlaubKarte(S.urlaubNaechstes));
+  if (eigen && (S.urlaubsplan || []).length) v.append(urlaubsplanKarte(S.urlaubsplan, false));
   if (D.fehlend.length) v.append(h('div', { class: 'card' }, h('h2', {}, '⚠ ' + t('fehlend') + ' (' + D.fehlend.length + ')'),
     h('div', { class: 'chips' }, D.fehlend.map(d => eigen
       ? h('button', { class: 'chip', 'data-antrag': (S.antraege || []).some(a => a.datum === d && a.status === 'beantragt') ? '1' : null, onclick: () => { const std = S.me.std; EDIT = { datum: d, art: 'Arbeit', beginn: std.beginn, ende: std.ende, pause: std.pause, einsaetze: [{ objekt: std.objekt, stunden: null, taetigkeit: '', kundenadresse: '' }], quelle: 'Manuell' }; TAB = 'heute'; zeichne(); window.scrollTo(0, 0); } }, ((S.antraege || []).some(a => a.datum === d && a.status === 'beantragt') ? '📨 ' : '') + dKurz(d))
@@ -1280,7 +1309,8 @@ function pruefHinweis() {
   try { if (sessionStorage.getItem('teamapp_pruef') === sig) return; sessionStorage.setItem('teamapp_pruef', sig); } catch (e) { }
   const m = document.getElementById('modal');
   m.replaceChildren(h('div', { class: 'card' }, h('h2', {}, '⚠ Zu prüfen: ' + n),
-    A.pruefen.antraege.length ? h('div', {}, '📨 ' + (A.pruefen.antraege.length === 1 ? '1 Änderungsantrag' : A.pruefen.antraege.length + ' Änderungsanträge') + ' – zählt erst nach deiner Entscheidung') : null,
+    A.pruefen.antraege.some(a => a.urlaub) ? h('div', {}, '🏖 ' + A.pruefen.antraege.filter(a => a.urlaub).length + ' Urlaubsantrag/-anträge – bitte genehmigen oder ablehnen') : null,
+    A.pruefen.antraege.some(a => !a.urlaub) ? h('div', {}, '📨 ' + A.pruefen.antraege.filter(a => !a.urlaub).length + ' Änderungsantrag/-anträge – zählt erst nach deiner Entscheidung') : null,
     A.pruefen.aenderungen.length ? h('div', {}, '✎ ' + (A.pruefen.aenderungen.length === 1 ? '1 Eintrag wurde' : A.pruefen.aenderungen.length + ' Einträge wurden') + ' nach der ersten Erfassung geändert') : null,
     h('button', { class: 'btn pri', id: 'btnPruefen', style: 'margin-top:12px', onclick: () => { m.classList.remove('on'); TAB = 'team'; ADM_RB = null; EDIT = null; zeichne(); const k = document.getElementById('pruefKarte'); if (k) k.scrollIntoView(); } }, 'Jetzt ansehen'),
     h('button', { class: 'btn link', onclick: () => m.classList.remove('on') }, 'Später')));
@@ -1297,7 +1327,22 @@ function pruefKarte() {
   const P = A.pruefen; if (!pruefAnzahl()) return null;
   const card = h('div', { class: 'card', id: 'pruefKarte', style: 'border:2px solid var(--warn)' }, h('h2', {}, '⚠ Zu prüfen (' + pruefAnzahl() + ')'));
   const entscheiden = async (id, was) => { laden(true, '…'); try { await call('antrag', { tagId: id, entscheidung: was }); await neuLaden(was === 'ok' ? 'Übernommen' : 'Abgelehnt'); } catch (e) { fehler(e); } };
-  P.antraege.forEach(a => {
+  P.antraege.filter(a => a.urlaub).forEach(a => {
+    const nein = h('button', { class: 'btn sec', style: 'min-height:44px;padding:10px', onclick: async () => {
+      if (!nein.dataset.sicher) { nein.dataset.sicher = '1'; nein.textContent = 'Wirklich ablehnen?'; return; }
+      laden(true, '…'); try { await call('antrag', { gruppe: a.gruppe, entscheidung: 'nein' }); await neuLaden('Abgelehnt'); } catch (e) { fehler(e); } } }, 'Ablehnen');
+    card.append(h('div', { class: 'einsatz', 'data-urlaub': a.gruppe },
+      h('b', {}, '🏖 Urlaubsantrag · ' + a.name),
+      h('div', {}, a.text + ' · ' + a.anzahl + ' Arbeitstag' + (a.anzahl === 1 ? '' : 'e')),
+      a.grund ? h('div', { class: 'small' }, 'Bemerkung: ' + a.grund) : null,
+      a.konto ? h('div', { class: 'small muted' }, 'Urlaub ' + a.konto.jahr + ': Anspruch ' + zahl(a.konto.anspruch) + ', bisher eingetragen ' + a.konto.eingetragen + ', übrig nach Genehmigung ' + zahl(a.konto.uebrigNach)) : null,
+      a.konto && a.konto.weitereOffen > 0 ? h('div', { class: 'small', style: 'color:var(--warn)' }, 'Weitere offene Urlaubsanträge ' + a.konto.jahr + ': ' + a.konto.weitereOffen + ' Tage') : null,
+      a.konto && a.konto.uebrigNach < 0 ? h('div', { class: 'bad' }, '⚠ Mehr als der Urlaubsanspruch') : null,
+      (a.konflikte || []).length ? h('div', { class: 'warn' }, '⚠ Bereits erfasst, wird beim Genehmigen übersprungen: ' + a.konflikte.map(k => dKurz(k.datum) + ' ' + k.art).join(', ')) : null,
+      h('div', { class: 'row' }, h('button', { class: 'btn ok', style: 'min-height:44px;padding:10px', onclick: async () => {
+        laden(true, '…'); try { await call('antrag', { gruppe: a.gruppe, entscheidung: 'ok' }); await neuLaden('Genehmigt'); } catch (e) { fehler(e); } } }, 'Genehmigen'), nein)));
+  });
+  P.antraege.filter(a => !a.urlaub).forEach(a => {
     const nein = h('button', { class: 'btn sec', style: 'min-height:44px;padding:10px', onclick: () => {
       if (nein.dataset.sicher) entscheiden(a.tagId, 'nein'); else { nein.dataset.sicher = '1'; nein.textContent = 'Wirklich ablehnen?'; } } }, 'Ablehnen');
     card.append(h('div', { class: 'einsatz' },
@@ -1323,6 +1368,8 @@ function aTeam(v) {
   }
   const inst = installKarte();
   v.append(pruefKarte());
+  const plan = (A.urlaubsplan || []).filter(x => x.status !== 'beantragt');
+  if (plan.length) v.append(urlaubsplanKarte(plan, true));
   A.mitarbeiter.filter(m => m.rolle !== 'Admin').forEach(m => {
     const linkFeld = h('input', { value: m.link || '(Link fehlt – linksErzeugen ausführen)', readonly: true, onclick: ev => ev.target.select() });
     v.append(h('div', { class: 'card' },
