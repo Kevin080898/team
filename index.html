@@ -550,7 +550,8 @@ function erfassenKarte(titel, mitStandard) {
       oninput: ev => schreib(ENTWURF, ev.target.value.trim() ? JSON.stringify({ datum: (entwurf && entwurf.text && entwurf.datum) || S.datum, text: ev.target.value }) : null) });
     const altEntwurf = entwurf && entwurf.text && entwurf.datum && entwurf.datum !== S.datum;
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const mic = SR ? h('button', { class: 'btn sec mic' + (diktat.rec ? ' rec' : ''), id: 'btnMic', style: 'margin-top:8px', onclick: () => diktat(document.getElementById('freitext') || ta, mic) }, diktat.rec ? '■ ' + t('stopp') : '🎤 ' + t('sprechen')) : null;
+    const schliesst = !diktat.rec && (diktat.alte || []).some(r => !r._zu);
+    const mic = SR ? h('button', { class: 'btn sec mic' + (diktat.rec || schliesst ? ' rec' : ''), id: 'btnMic', style: 'margin-top:8px', disabled: schliesst, onclick: () => diktat(document.getElementById('freitext') || ta, mic) }, diktat.rec ? '■ ' + t('stopp') : schliesst ? '…' : '🎤 ' + t('sprechen')) : null;
     card.append(mitStandard ? h('div', { class: 'or' }, t('oder')) : null, h('label', { for: 'freitext' }, t('erzaehl')),
       altEntwurf ? h('div', { class: 'warn' }, t('entwurfVom') + ' ' + dDe(entwurf.datum) + '. ' + t('entwurfDatum')) : null, ta,
       h('div', { class: 'xs muted', style: 'margin-top:6px' }, t('erzaehlHint')), mic,
@@ -593,64 +594,76 @@ async function auswerten(text) {
   try { const p = await call('auswerten', { text, datum: S.datum }); p.quelle = 'Sprache'; p.originaltext = text; EDIT = p; laden(false); zeichne(); window.scrollTo(0, 0); }
   catch (e) { fehler(e); }
 }
-// Spracheingabe. Jede Aufnahme hängt ihren Text an. Wichtig auf dem iPhone: Der Spracherkenner ist dort nur einmal vorhanden –
-// eine neue Aufnahme startet erst, wenn die vorige wirklich beendet ist (sonst bleibt sie stumm), und das letzte Wort
-// der vorigen Aufnahme, das oft erst nach „Stopp“ kommt, wird noch übernommen.
+// Spracheingabe. Jede Aufnahme hängt ihren Text an (auch an schon vorhandenen Text). Regeln fürs iPhone (v3.4):
+// 1. Eine Aufnahme startet IMMER direkt im Tipp auf den Knopf – nie zeitversetzt (iOS ignoriert zeitversetzte Starts).
+// 2. Nach „Stopp“ ist der Knopf kurz gesperrt („…“), bis die alte Aufnahme wirklich zu ist (spätestens nach 1,2 s wird sie
+//    abgebrochen). Erst dann ist der nächste Tipp frei – so belegt nie eine alte Aufnahme das Mikrofon.
+// 3. Jede Aufnahme kennt ihren eigenen Textteil und ersetzt nur diesen; ein nachgeliefertes letztes Wort landet an der richtigen Stelle.
+// 4. Kommt nach dem Start 7 s lang kein Ton an (kein Mikrofonsignal), wird die Aufnahme beendet und ein Hinweis gezeigt (kein automatischer Neustart).
 function diktat(ta, btn) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const knopf = () => document.getElementById('btnMic') || btn;
   const feld = () => document.getElementById('freitext') || ta;
   const ruhe = () => { const b = knopf(); b.classList.remove('rec'); b.disabled = false; b.textContent = '🎤 ' + t('sprechen'); };
-  const zeige = txt => { const b = knopf(); b.classList.add('rec'); b.disabled = false; b.textContent = txt; };
-  // Läuft eine Aufnahme: beenden. Der Knopf ist sofort wieder frei; die Aufnahme darf ihr letztes Ergebnis noch nachliefern.
-  if (diktat.rec) { const alt = diktat.rec; diktat.rec = null; diktat.alt = alt; try { alt.stop(); } catch (e) { } ruhe(); return; }
-  if (diktat.wartet) return;
-  const los = versuch => {
-    let rec;
-    try {
-      rec = new SR(); diktat.rec = rec;
-      // Auf Handys Satz für Satz (Daueraufnahme ist auf iPhone und Android unzuverlässig); am Rechner durchgehend.
-      rec.lang = L === 'ro' ? 'ro-RO' : 'de-DE'; rec.continuous = !(IOS || ANDROID); rec.interimResults = true;
-      const basis = feld().value.trim() ? feld().value.trim() + ' ' : '';
-      let gehoert = false;
-      rec.onstart = rec.onaudiostart = () => { gehoert = true; };
-      rec.onresult = ev => {
-        gehoert = true;
-        let s = ''; for (const r of ev.results) s += r[0].transcript;
-        const f = feld(); f.value = basis + s.trim(); f.dispatchEvent(new Event('input'));
-      };
-      rec.onerror = ev => {
-        if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') { knopf().classList.add('hide'); toast(t('mikroAus')); }
-        if (diktat.rec === rec) { diktat.rec = null; ruhe(); }
-      };
-      rec.onend = () => {
-        if (diktat.alt === rec) diktat.alt = null;
-        if (diktat.rec === rec) { diktat.rec = null; ruhe(); }
-        if (diktat.weiter) { const w = diktat.weiter; diktat.weiter = null; w(); }
-      };
-      rec.start(); zeige('■ ' + t('stopp'));
-      // Reagiert das Mikrofon nicht (kommt auf dem iPhone gelegentlich vor): einmal neu versuchen, dann Hinweis.
-      setTimeout(() => {
-        if (diktat.rec !== rec || gehoert) return;
-        diktat.rec = null; try { rec.onresult = null; rec.onend = null; rec.abort(); } catch (e) { }
-        if (versuch < 2) { zeige('…'); setTimeout(() => los(versuch + 1), 600); } else { ruhe(); toast(t('mikroHaengt')); }
-      }, 4000);
-    } catch (e) {
-      if (diktat.rec === rec) diktat.rec = null;
-      if (versuch < 2) { zeige('…'); setTimeout(() => los(versuch + 1), 600); } else { ruhe(); toast(t('mikroHaengt')); }
-    }
-  };
-  // Die vorige Aufnahme beendet sich noch: auf ihr Ende warten (höchstens 1,5 Sekunden), dann starten.
-  if (diktat.alt) {
-    diktat.wartet = true; zeige('…');
-    const alt = diktat.alt; let fertig = false;
-    const weiter = () => { if (fertig) return; fertig = true; diktat.wartet = false; diktat.alt = null; diktat.weiter = null; setTimeout(() => los(1), 150); };
-    diktat.weiter = weiter;
-    setTimeout(() => { if (fertig) return; try { alt.abort(); } catch (e) { } setTimeout(weiter, 400); }, 1500);
+  const zeige = (txt, gesperrt) => { const b = knopf(); b.classList.add('rec'); b.disabled = !!gesperrt; b.textContent = txt; };
+  diktat.alte = (diktat.alte || []).filter(r => !r._zu);
+  // Läuft eine Aufnahme: beenden. Bis sie wirklich zu ist, ist der Knopf gesperrt.
+  if (diktat.rec) {
+    const alt = diktat.rec; diktat.rec = null; diktat.alte.push(alt);
+    try { alt.stop(); } catch (e) { }
+    zeige('…', true);
+    alt._notaus = setTimeout(() => { if (!alt._zu) { try { alt.abort(); } catch (e) { } alt._zu = true; } diktat.frei(); }, 1200);
     return;
   }
-  los(1);
+  if (diktat.alte.length) return;          // alte Aufnahme schließt noch (Knopf ist gesperrt)
+  let rec;
+  try { rec = new SR(); } catch (e) { toast(t('mikroHaengt')); return; }
+  diktat.rec = rec;
+  rec.lang = L === 'ro' ? 'ro-RO' : 'de-DE';
+  rec.continuous = !(IOS || ANDROID);      // Handys: Satz für Satz; am Rechner durchgehend
+  rec.interimResults = true;
+  let ton = false, sep = '', meins = '';
+  rec.onaudiostart = rec.onsoundstart = rec.onspeechstart = () => { ton = true; };
+  rec.onresult = ev => {
+    ton = true;
+    let s = ''; for (const r of ev.results) s += r[0].transcript;
+    s = s.trim(); if (!s) return;
+    const f = feld(); let v = f.value;
+    const i = meins ? v.lastIndexOf(meins) : -1;
+    if (i >= 0) v = v.slice(0, i) + sep + s + v.slice(i + meins.length);
+    else { sep = v.trim() ? (/\s$/.test(v) ? '' : ' ') : ''; if (!v.trim()) v = ''; v = v + sep + s; }
+    meins = sep + s; f.value = v; f.dispatchEvent(new Event('input'));
+  };
+  rec.onerror = ev => {
+    clearTimeout(rec._wache);
+    if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') { knopf().classList.add('hide'); toast(t('mikroAus')); }
+    // Manche Browser melden einen Fehler ohne anschließendes Ende: dann selbst abschließen, damit der Knopf nicht hängt.
+    if (ev.error !== 'aborted') setTimeout(() => { if (!rec._zu && rec.onend) rec.onend(); }, 500);
+  };
+  rec.onend = () => {
+    rec._zu = true; clearTimeout(rec._notaus); clearTimeout(rec._wache);
+    if (diktat.rec === rec) { diktat.rec = null; ruhe(); }
+    diktat.frei();
+  };
+  try { const f = feld(); if (document.activeElement === f) f.blur(); } catch (e) { }
+  try { rec.start(); }
+  catch (e) { diktat.rec = null; rec._zu = true; ruhe(); toast(t('mikroHaengt')); return; }
+  zeige('■ ' + t('stopp'));
+  rec._wache = setTimeout(() => {
+    if (diktat.rec !== rec || ton) return;
+    diktat.rec = null; diktat.alte.push(rec);
+    try { rec.abort(); } catch (e) { }
+    setTimeout(() => { rec._zu = true; diktat.frei(); }, 300);
+    zeige('…', true); toast(t('mikroHaengt'));
+  }, 7000);
 }
+// Knopf wieder frei, sobald keine alte Aufnahme mehr offen ist.
+diktat.frei = () => {
+  diktat.alte = (diktat.alte || []).filter(r => !r._zu);
+  if (diktat.alte.length || diktat.rec) return;
+  const b = document.getElementById('btnMic'); if (!b) return;
+  b.classList.remove('rec'); b.disabled = false; b.textContent = '🎤 ' + t('sprechen');
+};
 
 // Uhrzeit in Berlin als „JJJJ-MM-TT HH:MM“ (wie auf dem Server) – für die 24-Stunden-Frist.
 function jetztBerlin() {
@@ -1147,15 +1160,20 @@ function qSenden(it, fortschritt) {
   return new Promise((res, rej) => {
     const x = new XMLHttpRequest();
     x.open('POST', API_URL); x.setRequestHeader('Content-Type', 'text/plain;charset=utf-8'); x.timeout = 180000;
-    if (x.upload) x.upload.onprogress = ev => { if (ev.lengthComputable) fortschritt(ev.loaded / ev.total); };
-    const netz = () => rej(new Error(t('netz')));
+    // KEIN x.upload.onprogress: ein Upload-Listener macht die Anfrage „nicht einfach“ → CORS-Vorabprüfung (OPTIONS),
+    // die Apps Script nicht beantwortet → jeder Upload scheitert. Fortschritt daher geschätzt (Größe/Zeit), am Ende 100 %.
+    const t0 = Date.now(), dauer = 3000 + (it.data || '').length / 120;
+    const uhr = setInterval(() => fortschritt(0.92 * (1 - Math.exp(-(Date.now() - t0) / dauer))), 400);
+    const netz = () => { clearInterval(uhr); rej(new Error(t('netz'))); };
     x.onload = () => {
+      clearInterval(uhr);
       let r; try { r = JSON.parse(x.responseText); } catch (e) { return netz(); }
+      fortschritt(1);
       if (r.ok) return res(r.data);
       const e = new Error(r.error || 'Fehler'); e.endgueltig = !/lock|zeitüberschreitung|timeout|service|überlastet|try again/i.test(r.error || ''); rej(e);
     };
-    x.onerror = x.ontimeout = netz;
-    x.send(JSON.stringify({ token: TOKEN, aktion: 'upload', daten: daten }));
+    x.onerror = x.ontimeout = x.onabort = netz;
+    try { x.send(JSON.stringify({ token: TOKEN, aktion: 'upload', daten: daten })); } catch (e) { netz(); }
   });
 }
 async function qStart() {
